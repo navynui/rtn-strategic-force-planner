@@ -24,3 +24,9 @@ This application provides an interactive dashboard for naval officers and analys
 ## 💻 How to Run
 
 Simply clone the repository and open `index.html` in any modern web browser.
+
+## ⚠️ Disclaimer
+This tool is an independent, open-source project developed for educational simulation and strategic visualization purposes. 
+- **Non-Official:** This application is NOT an official tool of the Royal Thai Navy (RTN) or the Ministry of Defense.
+- **Data Accuracy:** The data, costs, and capability ratings used in this simulation are based on publicly available information and hypothetical scenarios for planning exercises. They do not represent classified or actual budgetary figures.
+- **Purpose:** This is intended for educational, academic, and strategic planning research only. Use of this tool for actual procurement or official military policy is at the user's own risk.
