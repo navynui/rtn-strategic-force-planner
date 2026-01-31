@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTN Strategic Force Planner 2029-2045</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.321.0/dist/umd/lucide.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;700&display=swap');
+
+        :root {
+            --military-dark: #0f172a;
+            --military-panel: #1e293b;
+            --military-accent: #3b82f6;
+            --military-danger: #ef4444;
+            --military-success: #10b981;
+            --military-warning: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background-color: var(--military-dark);
+            color: #f8fafc;
+        }
+
+        .panel {
+            background-color: var(--military-panel);
+            border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .stepper-item.active {
+            color: var(--military-accent);
+            border-bottom: 2px solid var(--military-accent);
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .grid-cols-20 {
+            grid-template-columns: repeat(20, minmax(0, 1fr));
+        }
+
+        .resize-handle {
+            width: 12px;
+            height: 100%;
+            background: transparent;
+            cursor: ew-resize;
+            position: absolute;
+            right: -6px;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .resize-handle::after {
+            content: '';
+            width: 4px;
+            height: 60%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            transition: background 0.2s, height 0.2s;
+        }
+
+        .resize-handle:hover::after {
+            background: rgba(255, 255, 255, 0.6);
+            height: 80%;
+        }
+
+        @keyframes bounce-short {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .animate-bounce-short {
+            animation: bounce-short 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="h-16 border-b border-slate-700 flex items-center justify-between px-8 glass sticky top-0 z-50">
+        <div class="flex items-center space-x-4">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i data-lucide="anchor" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">RTN Strategic Force Planner</h1>
+                <p class="text-xs text-slate-400">Naval Capability & Budget Simulation 2029-2045</p>
+            </div>
+            <img src="logo.png" alt="RTN Logo" class="h-10 w-auto ml-4">
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="resetToDefault()"
+                class="px-3 py-2 bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30 rounded-md text-sm transition font-medium flex items-center gap-2"
+                title="Reset to Default State">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
+            </button>
+            <button onclick="saveToBrowser()"
+                class="px-3 py-2 bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 rounded-md text-sm transition font-medium flex items-center gap-2"
+                title="Save to Browser">
+                <i data-lucide="save" class="w-4 h-4"></i> Save
+            </button>
+            <button onclick="loadFromBrowser()"
+                class="px-3 py-2 bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600/30 rounded-md text-sm transition font-medium flex items-center gap-2"
+                title="Load from Browser">
+                <i data-lucide="folder-open" class="w-4 h-4"></i> Load
+            </button>
+            <div class="w-px h-6 bg-slate-700 mx-2"></div>
+            <button onclick="exportData()"
+                class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-md text-sm transition font-medium flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i> Export
+            </button>
+            <button onclick="importDataTrigger()"
+                class="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-md text-sm transition font-medium flex items-center gap-2">
+                <i data-lucide="upload" class="w-4 h-4"></i> Import
+            </button>
+            <input type="file" id="importInput" class="hidden" accept=".json" onchange="importData(event)">
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Navigation (Stepper) -->
+        <aside class="w-64 border-r border-slate-700 p-6 flex flex-col space-y-2">
+            <button onclick="setStep(1)" id="step-btn-1"
+                class="stepper-item flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800 transition active">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span class="font-medium">Force Assessment</span>
+            </button>
+            <button onclick="setStep(2)" id="step-btn-2"
+                class="stepper-item flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800 transition">
+                <i data-lucide="target" class="w-5 h-5"></i>
+                <span class="font-medium">Gap Analysis</span>
+            </button>
+            <button onclick="setStep(3)" id="step-btn-3"
+                class="stepper-item flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800 transition">
+                <i data-lucide="gantt-chart" class="w-5 h-5"></i>
+                <span class="font-medium">Simulation</span>
+            </button>
+            <button onclick="setStep(4)" id="step-btn-4"
+                class="stepper-item flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800 transition">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+                <span class="font-medium">Strategic Report</span>
+            </button>
+
+            <div class="mt-auto pt-6 border-t border-slate-700 space-y-4">
+                <div>
+                    <div class="text-xs text-slate-500 uppercase font-bold mb-2">Budget Status</div>
+                    <div id="sidebar-budget-status" class="space-y-2">
+                        <!-- Dynamic budget indicator -->
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <div class="panel p-3 rounded-lg border-l-4 border-blue-500">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold">Avg. War Capability</div>
+                        <div id="sidebar-avg-capability" class="text-xl font-bold text-slate-200">—</div>
+                    </div>
+                    <div class="panel p-3 rounded-lg border-l-4 border-green-500">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold">Planned Assets 2026-2040</div>
+                        <div id="sidebar-planned-assets" class="text-xl font-bold text-slate-200">—</div>
+                    </div>
+                    <div class="panel p-3 rounded-lg border-l-4 border-yellow-500">
+                        <div class="text-[10px] text-slate-400 uppercase font-bold">Budget Health</div>
+                        <div id="budget-health-kpi" class="text-xl font-bold text-green-400">GOOD</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Viewport -->
+        <section id="viewport" class="flex-1 p-8 overflow-y-auto">
+            <!-- Content will be rendered here -->
+            <div id="step-container"></div>
+        </section>
+    </main>
+
+        <script>
+        // --- Core Logic & State ---
+        const appState = {
+            currentStep: 1,
+            isInitialized: false,
+            standingForceOpsRatio: 1.0,
+            standingForceMaintRatio: 1.0,
+            /** Per-fleet-item adjusted decommission year (key: group|name|yearOrDelivery, value: year). Used for Baseline and Coming (e.g. S26T) only. */
+            decommissionYearOverrides: {},
+            // Budget Framework (Column J from PDF/Image)
+            budgetFramework: {
+                2026: 7023, 2027: 7234, 2028: 7451, 2029: 7674, 2030: 7905,
+                2031: 8142, 2032: 8386, 2033: 8638, 2034: 8897, 2035: 9164,
+                2036: 9439, 2037: 9722, 2038: 10013, 2039: 10314, 2040: 10623,
+                2041: 10942, 2042: 11270, 2043: 11608, 2044: 11956, 2045: 12315,
+                2046: 12684, 2047: 13065
+            },
+            // Payment Ratios
+            paymentRatios: {
+                1: [100],
+                2: [20, 80],
+                3: [20, 40, 40],
+                4: [20, 30, 30, 20],
+                5: [10, 20, 20, 20, 30]
+            },
+            // Group Colors (Premium Palette)
+            groupColors: {
+                // Naval Vessels
+                'เรือบรรทุกเฮลิคอปเตอร์': '#8b5cf6',  // Violet - Carrier
+                'เรือดำน้ำ': '#1e40af',              // Dark Blue - Submarine
+                'เรือฟริเกต': '#3b82f6',            // Blue - Frigate
+                'เรือคอร์เวต': '#60a5fa',           // Light Blue - Corvette
+                'เรือตรวจการณ์ระยะไกลฝั่ง': '#0ea5e9', // Sky Blue - OPV
+                'เรือตรวจการณ์': '#06b6d4',         // Cyan - Patrol
+                'เรือเฉพาะกิจ': '#14b8a6',          // Teal - Special Ops
+                'เรือยกพลขึ้นบก': '#10b981',        // Emerald - Amphibious
+                'เรือทุ่นระเบิด': '#eab308',        // Yellow - Mine Warfare
+                'เรือสนับสนุน': '#94a3b8',          // Slate - Support
+                // Air Assets
+                'เครื่องบิน': '#a855f7',            // Purple - Aircraft
+                'เฮลิคอปเตอร์': '#ec4899',          // Pink - Helicopter
+                'ระบบไร้คนขับ': '#f43f5e',          // Rose - UAV/Drones
+                // Ground & C2
+                'หน่วยบก': '#22c55e',               // Green - Marines/Ground
+                'ระบบควบคุม': '#f97316',             // Orange - C2/Control
+                'Infrastructure': '#64748b'       // Grey - Bases
+            },
+            // Baseline Capabilities (Strict Table Jan 2026) - This is now the source for distribution
+            initialCapabilities: [
+                { id: 'c2', name: 'Command & Control', th: 'การควบคุมบังคับบัญชา', score: 88 },
+                { id: 'intel', name: 'Surveillance & Intel', th: 'การลาดตระเวน/หาข่าว', score: 82 },
+                { id: 'strike', name: 'Maritime Strike', th: 'การโจมตีในทะเล', score: 85 },
+                { id: 'shore', name: 'Sea-to-Shore Strike', th: 'การโจมตีจากทะเลสู่ฝั่ง', score: 92 },
+                { id: 'long', name: 'Long-range Operations', th: 'การปฏิบัติการในระยะไกล', score: 68 },
+                { id: 'defense', name: 'Coastal/Point Defense', th: 'การป้องกันพื้นที่สำคัญ', score: 85 },
+                { id: 'merchant', name: 'Merchant Vessel Control', th: 'การควบคุมเรือพาณิชย์', score: 75 },
+                { id: 'intercept', name: 'Interception & Boarding', th: 'การสกัดกั้น/จับกุม', score: 94 },
+                { id: 'sustain', name: 'Combat Sustainability', th: 'การดำรงความต่อเนื่องในการรบ', score: 62 },
+                { id: 'sar', name: 'Search and Rescue (SAR)', th: 'การค้นหาและช่วยเหลือ', score: 90 },
+                { id: 'medevac', name: 'Medical Evacuation', th: 'การส่งกลับทางสายแพทย์', score: 87 },
+                { id: 'repair', name: 'Recovery and Repair', th: 'การกู้ซ่อม', score: 65 }
+            ],
+            // Calculated capabilities will be stored here. It's a snapshot of the current state.
+            capabilities: [],
+            // Fleet Data (Baseline Jan 2026 - Grouped as per status pictures)
+            fleet: [
+                // เรือ (Ships)
+                { group: 'เรือบรรทุกเฮลิคอปเตอร์', name: 'ร.ล.จักรีนฤเบศร', type: 'Carrier', year: 1997, class: 'Ship', status: 'Baseline', opsCost: 105, maintCost: 35, capabilities: {} },
+                { group: 'เรือคอร์เวต', name: 'ร.ล.รัตนโกสินทร์', type: 'Corvette', year: 1986, class: 'Ship', status: 'Baseline', opsCost: 75, maintCost: 25, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.นเรศวร', type: 'Frigate', year: 1994, class: 'Ship', status: 'Baseline', opsCost: 171, maintCost: 57, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.ตากสิน', type: 'Frigate', year: 1993, class: 'Ship', status: 'Baseline', opsCost: 171, maintCost: 57, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.ภูมิพลอดุลยเดช', type: 'Frigate', year: 2019, class: 'Ship', status: 'Baseline', opsCost: 180, maintCost: 60, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.เจ้าพระยา', type: 'Frigate', year: 1991, class: 'Ship', status: 'Baseline', opsCost: 195, maintCost: 65, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.บางปะกง', type: 'Frigate', year: 1991, class: 'Ship', status: 'Baseline', opsCost: 195, maintCost: 65, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.กระบุรี', type: 'Frigate', year: 1992, class: 'Ship', status: 'Baseline', opsCost: 195, maintCost: 65, capabilities: {} },
+                { group: 'เรือฟริเกต', name: 'ร.ล.สายบุรี', type: 'Frigate', year: 1992, class: 'Ship', status: 'Baseline', opsCost: 195, maintCost: 65, capabilities: {} },
+                { group: 'เรือตรวจการณ์ระยะไกลฝั่ง', name: 'ร.ล.ประจวบคีรีขันธ์', type: 'OPV', year: 2019, class: 'Ship', status: 'Baseline', opsCost: 75, maintCost: 25, capabilities: {} },
+                { group: 'เรือตรวจการณ์ระยะไกลฝั่ง', name: 'ร.ล.ปัตตานี', type: 'OPV', year: 2005, class: 'Ship', status: 'Baseline', opsCost: 75, maintCost: 25, capabilities: {} },
+                { group: 'เรือตรวจการณ์ระยะไกลฝั่ง', name: 'ร.ล.นราธิวาส', type: 'OPV', year: 2006, class: 'Ship', status: 'Baseline', opsCost: 75, maintCost: 25, capabilities: {} },
+                { group: 'เรือตรวจการณ์ระยะไกลฝั่ง', name: 'ร.ล.กระบี่', type: 'OPV', year: 2013, class: 'Ship', status: 'Baseline', opsCost: 75, maintCost: 25, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ร.ล.แหลมสิงห์', type: 'Patrol Boat', year: 2016, class: 'Ship', status: 'Baseline', opsCost: 12, maintCost: 4, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ร.ล.หัวหิน/แกลง/ศรีราชา', type: 'Patrol Boat', qty: 3, year: 2001, class: 'Ship', status: 'Baseline', opsCost: 12, maintCost: 4, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ร.ล.ชลบุรี/สงขลา/ภูเก็ต/สัตหีบ', type: 'Patrol Boat', qty: 4, year: 1983, class: 'Ship', status: 'Baseline', opsCost: 9, maintCost: 3, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ชุด ร.ล.คลองใหญ่/ตากใบ/เทพา', type: 'Patrol Boat', qty: 3, year: 1984, class: 'Ship', status: 'Baseline', opsCost: 9, maintCost: 3, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ร.ล.ทยานชล', type: 'Patrol Boat', year: 1987, class: 'Ship', status: 'Baseline', opsCost: 9, maintCost: 3, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ร.ล.คำรณสินธุ/ล่องลม', type: 'Corvette', qty: 2, year: 1992, class: 'Ship', status: 'Baseline', opsCost: 75, maintCost: 25, capabilities: {} },
+                { group: 'เรือตรวจการณ์', name: 'ชุดเรือ ต. (T.991/994/997)', type: 'Patrol Boat', year: 2010, class: 'Ship', status: 'Baseline', opsCost: 12, maintCost: 4, capabilities: {} },
+                { group: 'เรือยกพลขึ้นบก', name: 'ร.ล.ช้าง', type: 'LPD', year: 2023, class: 'Ship', status: 'Baseline', opsCost: 90, maintCost: 30, capabilities: {} },
+                { group: 'เรือยกพลขึ้นบก', name: 'ร.ล.สุรินทร์/สีชัง', type: 'LST', qty: 2, year: 1988, class: 'Ship', status: 'Baseline', opsCost: 30, maintCost: 10, capabilities: {} },
+                { group: 'เรือทุ่นระเบิด', name: 'ร.ล.ถลาง', type: 'MCM', year: 1980, class: 'Ship', status: 'Baseline', opsCost: 18, maintCost: 6, capabilities: {} },
+                { group: 'เรือทุ่นระเบิด', name: 'ร.ล.ลาดหญ้า/ท่าดินแดง', type: 'MCM', qty: 2, year: 1999, class: 'Ship', status: 'Baseline', opsCost: 18, maintCost: 6, capabilities: {} },
+                { group: 'เรือทุ่นระเบิด', name: 'ร.ล.บางระจัน/หนองสาหร่าย', type: 'MCM', qty: 2, year: 1987, class: 'Ship', status: 'Baseline', opsCost: 18, maintCost: 6, capabilities: {} },
+                { group: 'เครื่องบิน', name: 'เครื่องบินลำเลียง/ลาดตระเวน/ตรวจการณ์', type: 'Aircraft', qty: 12, year: 2010, class: 'Air', status: 'Baseline', opsCost: 120, maintCost: 40, capabilities: {} },
+                { group: 'เฮลิคอปเตอร์', name: 'เฮลิคอปเตอร์ประจำเรือ (Frigate/LPD)', type: 'Heli', qty: 11, year: 2010, class: 'Air', status: 'Baseline', opsCost: 60, maintCost: 20, capabilities: {} },
+                { group: 'ระบบไร้คนขับ', name: 'อากาศยานไร้คนขับ (UAV)', type: 'UAV', qty: 6, year: 2020, class: 'Air', status: 'Baseline', opsCost: 15, maintCost: 5, capabilities: {} },
+                { group: 'หน่วยบก', name: 'ยานพาหนะ/รถสายพาน/รถหุ้มเกราะ', type: 'Vehicle', qty: 83, year: 2005, class: 'Ground', status: 'Baseline', opsCost: 1.8, maintCost: 0.6, capabilities: {} },
+                { group: 'หน่วยบก', name: 'ปืนใหญ่/ปภ./นปอ./Guns', type: 'Artillery', qty: 248, year: 2000, class: 'Ground', status: 'Baseline', opsCost: 1.8, maintCost: 0.6, capabilities: {} },
+                { group: 'เรือดำน้ำ', name: 'S26T Submarine', type: 'Submarine', deliveryYear: 2028, class: 'Ship', status: 'Coming', capabilities: {}, opsCost: 240, maintCost: 40 },
+                { group: 'Infrastructure', name: 'ฐานทัพเรือสัตหีบ (Sattahip Naval Base)', type: 'Base', year: 1922, class: 'Infra', status: 'Baseline', opsCost: 40, maintCost: 10, capabilities: {} },
+                { group: 'Infrastructure', name: 'ฐานทัพเรือสงขลา (Songkhla Naval Base)', type: 'Base', year: 1995, class: 'Infra', status: 'Baseline', opsCost: 20, maintCost: 5, capabilities: {} },
+                { group: 'Infrastructure', name: 'ฐานทัพเรือพังงา (Phang Nga Naval Base)', type: 'Base', year: 1995, class: 'Infra', status: 'Baseline', opsCost: 20, maintCost: 5, capabilities: {} },
+                { group: 'ระบบควบคุม', name: 'Naval C4I Center', type: 'C4I', year: 2015, class: 'System', status: 'Baseline', opsCost: 150, maintCost: 50, capabilities: {} }
+            ],
+            selectedCatalogGroup: 'เรือฟริเกต',
+            ganttSortBy: 'startYear',
+            ganttSortOrder: 'asc',
+            assetCatalog: [
+                { id: 'carrier', group: 'เรือบรรทุกเฮลิคอปเตอร์', name: 'Helicopter Carrier', th: 'เรือบรรทุกเฮลิคอปเตอร์', cost: 10000, opsCost: 105, maintCost: 35, boosts: { c2: 15, intel: 10, long: 15, medevac: 10, sar: 10 } },
+                { id: 'sub_new', group: 'เรือดำน้ำ', name: 'Submarine (New)', th: 'เรือดำน้ำ (ใหม่)', cost: 14000, opsCost: 240, maintCost: 40, boosts: { strike: 20, intel: 15, defense: 10 } },
+                { id: 'sub_used', group: 'เรือดำน้ำ', name: 'Submarine (Used - 7yr)', th: 'เรือดำน้ำ (ใช้แล้ว/อายุ 7 ปี)', cost: 3000, opsCost: 240, maintCost: 80, boosts: { strike: 12, intel: 8, defense: 5 } },
+                { id: 'frig_high', group: 'เรือฟริเกต', name: 'High-Perf Frigate + AAW', th: 'เรือฟริเกตสมรรถนะสูง + ระบบป้องกันฯ', cost: 17500, opsCost: 180, maintCost: 60, boosts: { strike: 15, defense: 15, intel: 8, c2: 5, shore: 10 } },
+                { id: 'frig_std_w', group: 'เรือฟริเกต', name: 'Standard Frigate (West)', th: 'เรือฟริเกต (อ.) + ฮ. (EU/US)', cost: 10000, opsCost: 171, maintCost: 57, boosts: { strike: 10, defense: 10, intel: 5, sar: 5, merchant: 5, shore: 5 } },
+                { id: 'frig_std_c', group: 'เรือฟริเกต', name: 'Standard Frigate (China)', th: 'เรือฟริเกต (อ.) + ฮ. (CN)', cost: 6000, opsCost: 195, maintCost: 65, boosts: { strike: 10, defense: 10, intel: 4, sar: 3, merchant: 5, shore: 5 } },
+                { id: 'corvette', group: 'เรือคอร์เวต', name: 'Corvette/Light Frigate', th: 'เรือฟริเกต/เรือคอร์เวต (อ.)', cost: 5000, opsCost: 75, maintCost: 25, boosts: { strike: 8, defense: 8, merchant: 8, intercept: 5 } },
+                { id: 'opv', group: 'เรือตรวจการณ์ระยะไกลฝั่ง', name: 'OPV / Large Patrol', th: 'เรือฟริเกต (ป)/เรือตรวจการณ์ไกลฝั่ง', cost: 3000, opsCost: 75, maintCost: 25, boosts: { merchant: 15, sar: 12, medevac: 8, intercept: 10, intel: 5 } },
+                { id: 'lcs', group: 'เรือตรวจการณ์', name: 'LCS / Coastal Strike', th: 'เรือโจมตีชายฝั่ง LCS', cost: 14000, opsCost: 174, maintCost: 58, boosts: { shore: 15, strike: 12, defense: 10, repair: 5 } },
+                { id: 'fac_m', group: 'เรือตรวจการณ์', name: 'FAC (Missile)', th: 'เรือเร็วโจมตีอาวุธปล่อยนำวิถี', cost: 1500, opsCost: 12, maintCost: 4, boosts: { strike: 12, defense: 5, intercept: 8, merchant: 5 } },
+                { id: 'fac_g', group: 'เรือตรวจการณ์', name: 'FAC (Gun/ASW)', th: 'เรือเร็วโจมตีปืน/ปราบเรือดำน้ำ', cost: 1000, opsCost: 9, maintCost: 3, boosts: { intercept: 12, defense: 8, merchant: 8, intel: 5 } },
+                { id: 'patrol_std', group: 'เรือตรวจการณ์', name: 'Patrol Vessel', th: 'เรือตรวจการณ์ใกล้ฝั่ง', cost: 80, opsCost: 12, maintCost: 4, boosts: { intercept: 8, merchant: 8, sar: 5 } },
+                { id: 'patrol_coastal', group: 'เรือตรวจการณ์', name: 'Coastal Patrol', th: 'เรือตรวจการณ์ชายฝั่ง', cost: 30, opsCost: 1.8, maintCost: 0.6, boosts: { intercept: 10, merchant: 10, sar: 3 } },
+                { id: 'spec_ops', group: 'เรือเฉพาะกิจ', name: 'Special Ops Craft', th: 'เรือปฏิบัติการพิเศษ (นสร.)', cost: 150, opsCost: 9, maintCost: 3, boosts: { intercept: 20, intel: 8, shore: 5, medevac: 5 } },
+                { id: 'riverine_fast', group: 'เรือเฉพาะกิจ', name: 'Fast River Patrol', th: 'เรือเร็วตรวจการณ์ลำน้ำ', cost: 9, opsCost: 0.3, maintCost: 0.1, boosts: { intercept: 5, sar: 2, merchant: 2 } },
+                { id: 'riverine_assault', group: 'เรือเฉพาะกิจ', name: 'River Assault Boat', th: 'เรือจู่โจมลำน้ำ', cost: 0.3, opsCost: 0.3, maintCost: 0.1, boosts: { intercept: 2, shore: 1 } },
+                { id: 'lpd_support', group: 'เรือยกพลขึ้นบก', name: 'LPD Support Ship', th: 'เรือสนับสนุนการยกพลฯ มีลาน ฮ. (LPD)', cost: 6000, opsCost: 90, maintCost: 30, boosts: { shore: 15, medevac: 15, long: 10, sar: 8, repair: 5 } },
+                { id: 'amphib_large', group: 'เรือยกพลขึ้นบก', name: 'Large Amphibious Ship', th: 'เรือยกพลขนาดใหญ่', cost: 500, opsCost: 30, maintCost: 10, boosts: { shore: 10, long: 5, sustain: 5 } },
+                { id: 'lcu_large', group: 'เรือยกพลขึ้นบก', name: 'Large Landing Craft (LCU)', th: 'เรือระบายพลขนาดใหญ่', cost: 130, opsCost: 1.5, maintCost: 0.5, boosts: { shore: 5, sar: 2 } },
+                { id: 'lcac', group: 'เรือยกพลขึ้นบก', name: 'New Landing Craft (LCAC)', th: 'เรือยกพลขึ้นบกแบบใหม่ (LCAC)', cost: 800, opsCost: 36, maintCost: 12, boosts: { shore: 12, intercept: 5 } },
+                { id: 'mcm_coast', group: 'เรือทุ่นระเบิด', name: 'Coastal Minehunter', th: 'เรือล่าทำลายทุ่นระเบิดใกล้ฝั่ง', cost: 3200, opsCost: 18, maintCost: 6, boosts: { defense: 15, intel: 5, merchant: 5 } },
+                { id: 'msw_coast', group: 'เรือทุ่นระเบิด', name: 'Coastal Minesweeper', th: 'เรือกวาดทุ่นระเบิดใกล้ฝั่ง', cost: 2300, opsCost: 3, maintCost: 1, boosts: { defense: 10, merchant: 5 } },
+                { id: 'msw_shallow', group: 'เรือทุ่นระเบิด', name: 'Shallow Minesweeper', th: 'เรือกวาดทุ่นระเบิดน้ำตื้น', cost: 32, opsCost: 15, maintCost: 5, boosts: { defense: 5, merchant: 3 } },
+                { id: 'mcm_support', group: 'เรือทุ่นระเบิด', name: 'MCS (MCM Support)', th: 'เรือสนับสนุนการต่อต้านทุ่นระเบิด', cost: 500, opsCost: 1.8, maintCost: 0.6, boosts: { defense: 8, sustain: 5, c2: 2 } },
+                { id: 'eod_team', group: 'เรือทุ่นระเบิด', name: 'EOD / Mine Disposal', th: 'เจ้าหน้าถอดทำลายอมภัณฑ์ (EOD)', cost: 3.5, opsCost: 0.3, maintCost: 0.1, boosts: { defense: 5, sar: 2, repair: 2 } },
+                { id: 'converted_fish', group: 'เรือทุ่นระเบิด', name: 'Converted Fishing Vessel', th: 'เรือประมงดัดแปลง', cost: 10, opsCost: 1.2, maintCost: 0.4, boosts: { intel: 5, merchant: 2 } },
+                { id: 'log_large', group: 'เรือสนับสนุน', name: 'Large Replenishment Ship', th: 'เรือส่งกำลังบำรุงขนาดใหญ่', cost: 1500, opsCost: 24, maintCost: 8, boosts: { long: 20, sustain: 15, medevac: 5 } },
+                { id: 'log_medium', group: 'เรือสนับสนุน', name: 'Medium Replenishment Ship', th: 'เรือส่งกำลังบำรุงขนาดกลาง', cost: 500, opsCost: 18, maintCost: 6, boosts: { long: 10, sustain: 8 } },
+                { id: 'survey_large', group: 'เรือสนับสนุน', name: 'Large Survey Ship', th: 'เรือสำรวจขนาดใหญ่', cost: 250, opsCost: 24, maintCost: 8, boosts: { intel: 15, merchant: 5 } },
+                { id: 'survey_coast', group: 'เรือสนับสนุน', name: 'Coastal Survey Ship', th: 'เรือสำรวจใกล้ฝั่ง', cost: 20, opsCost: 4.5, maintCost: 1.5, boosts: { intel: 8, merchant: 3 } },
+                { id: 'tender_rescue', group: 'เรือสนับสนุน', name: 'Tender / Rescue Ship', th: 'เรือใช้งานเครื่องหมายฯ/เรือกู้ภัย', cost: 500, opsCost: 24, maintCost: 8, boosts: { repair: 15, sar: 10, sustain: 5 } },
+                { id: 'air_attack', group: 'เครื่องบิน', name: 'Attack Aircraft', th: 'เครื่องบินโจมตี', cost: 1500, opsCost: 120, maintCost: 40, boosts: { strike: 15, shore: 10, defense: 5 } },
+                { id: 'air_f35b', group: 'เครื่องบิน', name: 'F-35B STOVL Fighter', th: 'เครื่องบินขับไล่ขึ้นลงทางดิ่ง F-35', cost: 2900, opsCost: 150, maintCost: 50, boosts: { strike: 25, defense: 15, intel: 10, c2: 5 } },
+                { id: 'air_asu_missile', group: 'เครื่องบิน', name: 'ASuW Missile Aircraft', th: 'เครื่องบินต่อต้านเรือฯ ติดอาวุธปล่อยฯ', cost: 2000, opsCost: 120, maintCost: 40, boosts: { strike: 20, defense: 8 } },
+                { id: 'air_mpa_long', group: 'เครื่องบิน', name: 'Long Range MPA', th: 'เครื่องบินลาดตระเวนทางทะเลระยะไกล', cost: 2200, opsCost: 120, maintCost: 40, boosts: { intel: 20, sar: 10, merchant: 5 } },
+                { id: 'heli_asu_missile', group: 'เฮลิคอปเตอร์', name: 'ASuW Missile Heli', th: 'เฮลิคอปเตอร์ต่อต้านเรือฯ ติดอาวุธปล่อยฯ', cost: 1200, opsCost: 60, maintCost: 20, boosts: { strike: 12, defense: 5, intel: 5 } },
+                { id: 'heli_asw', group: 'เฮลิคอปเตอร์', name: 'ASW Helicopter', th: 'เฮลิคอปเตอร์ปราบเรือดำน้ำ', cost: 1400, opsCost: 60, maintCost: 20, boosts: { intel: 15, strike: 10, defense: 5 } },
+                { id: 'heli_frig', group: 'เฮลิคอปเตอร์', name: 'Frigate-based Heli', th: 'เฮลิคอปเตอร์ประจำเรือฟริเกต', cost: 1200, opsCost: 60, maintCost: 20, boosts: { sar: 12, intel: 8, merchant: 5 } },
+                { id: 'heli_transport', group: 'เฮลิคอปเตอร์', name: 'Transport Helicopter', th: 'เฮลิคอปเตอร์ลำเลียง', cost: 1400, opsCost: 45, maintCost: 15, boosts: { medevac: 15, sar: 10, long: 5 } },
+                { id: 'drone_attack', group: 'ระบบไร้คนขับ', name: 'Attack Drone (UCAV)', th: 'Drone โจมตี', cost: 1000, opsCost: 30, maintCost: 10, boosts: { strike: 12, intel: 12, shore: 5 } },
+                { id: 'uav_std', group: 'ระบบไร้คนขับ', name: 'Standard UAV System', th: 'UAV และอุปกรณ์ภาคพื้น', cost: 250, opsCost: 15, maintCost: 5, boosts: { intel: 15, sar: 10 } },
+                { id: 'seal', group: 'หน่วยบก', name: 'Navy SEAL / UDT', th: 'นักทำลายใต้น้ำจู่โจม', cost: 10, opsCost: 3, maintCost: 1, boosts: { intel: 10, sar: 5, intercept: 15 } },
+                { id: 'marine_reg', group: 'หน่วยบก', name: 'Marine Regiment', th: 'กำลังรบยกพลขึ้นบก', cost: 3000, opsCost: 1.8, maintCost: 0.6, boosts: { shore: 20, sustain: 10, medevac: 5 } },
+                { id: 'sam_med', group: 'หน่วยบก', name: 'Medium Range SAM', th: 'กำลังต่อสู้อากาศยาน (ระยะปานกลาง)', cost: 5000, opsCost: 90, maintCost: 30, boosts: { defense: 25, shore: 10, c2: 5 } },
+                { id: 'sam_short', group: 'หน่วยบก', name: 'Short Range SAM', th: 'กำลังต่อสู้อากาศยาน (ระยะประชิด)', cost: 2000, opsCost: 30, maintCost: 10, boosts: { defense: 15, shore: 5 } },
+                { id: 'infra_base', group: 'หน่วยบก', name: 'Base Infrastructure', th: 'ชุดจัดระเบียบเบื้องกลาง/พัฒนา', cost: 30, opsCost: 3, maintCost: 1, boosts: { sustain: 10, repair: 5 } },
+                { id: 'acdc_center', group: 'หน่วยบก', name: 'ACDC Operations Center', th: 'ศูนย์ต่อสู้อากาศยานและรักษาฝั่ง', cost: 1900, opsCost: 42, maintCost: 14, boosts: { c2: 15, defense: 10, intel: 10 } },
+                { id: 'mda_sys', group: 'ระบบควบคุม', name: 'MDA System', th: 'ระบบ MDA (Maritime Domain Awareness)', cost: 3000, opsCost: 30, maintCost: 10, boosts: { intel: 20, merchant: 15, c2: 5 } },
+                { id: 'joint_link', group: 'ระบบควบคุม', name: 'Joint Link System', th: 'ระบบ Link เชื่อม ทร./ทอ./ทบ.', cost: 8000, opsCost: 30, maintCost: 10, boosts: { c2: 25, strike: 5, defense: 5 } },
+                { id: 'tactical_link', group: 'ระบบควบคุม', name: 'Tactical UUV/USV Link', th: 'ระบบ Link เชื่อมเรือ UUV USV Drone', cost: 200, opsCost: 30, maintCost: 10, boosts: { c2: 15, intel: 10 } },
+                { id: 'c4isr_sys', group: 'ระบบควบคุม', name: 'C4ISR Full Suite', th: 'ระบบ C4ISR', cost: 6800, opsCost: 150, maintCost: 50, boosts: { c2: 30, intel: 15, strike: 5, defense: 5 } },
+                { id: 'uuv_local', group: 'ระบบควบคุม', name: 'Local UUV', th: 'ระบบ UUV (ผลิตในประเทศ)', cost: 30, opsCost: 0.3, maintCost: 0.1, boosts: { intel: 10, defense: 5 } },
+                { id: 'usv_local', group: 'ระบบควบคุม', name: 'Local USV', th: 'ระบบ USV (ผลิตในประเทศ)', cost: 20, opsCost: 0.3, maintCost: 0.1, boosts: { intercept: 10, intel: 5 } },
+                { id: 'drone_isr_s', group: 'ระบบควบคุม', name: 'Short-Range ISR Drone', th: 'Drone ตรวจการณ์ ระยะใกล้', cost: 3, opsCost: 0.3, maintCost: 0.1, boosts: { intel: 5, sar: 2 } },
+                { id: 'drone_isr_m', group: 'ระบบควบคุม', name: 'Med-Range ISR Drone', th: 'Drone ตรวจการณ์ ระยะกลาง', cost: 50, opsCost: 0.3, maintCost: 0.1, boosts: { intel: 12, sar: 5 } },
+                { id: 'drone_isr_l', group: 'ระบบควบคุม', name: 'Long-Range ISR Drone', th: 'Drone ตรวจการณ์ ระยะไกล', cost: 100, opsCost: 0.3, maintCost: 0.1, boosts: { intel: 18, sar: 8 } },
+                { id: 'drone_atk_s', group: 'ระบบควบคุม', name: 'Short-Range Atk Drone', th: 'Drone โจมตี ระยะใกล้', cost: 100, opsCost: 0.3, maintCost: 0.1, boosts: { strike: 10, intel: 5 } },
+                { id: 'drone_atk_m', group: 'ระบบควบคุม', name: 'Med-Range Atk Drone', th: 'Drone โจมตี ระยะกลาง', cost: 200, opsCost: 0.3, maintCost: 0.1, boosts: { strike: 15, intel: 8 } },
+                { id: 'drone_atk_l', group: 'ระบบควบคุม', name: 'Long-Range Atk Drone', th: 'Drone โจมตี ระยะไกล', cost: 300, opsCost: 0.3, maintCost: 0.1, boosts: { strike: 20, intel: 10 } },
+                { id: 'uw_sensor_net', group: 'ระบบควบคุม', name: 'Underwater Sensor Net', th: 'ระบบเครือข่าย Sensor ตรวจจับใต้น้ำ', cost: 3000, opsCost: 60, maintCost: 20, boosts: { intel: 25, defense: 10 } },
+                { id: 'base_dev', group: 'ระบบควบคุม', name: 'Base Modernization', th: 'การพัฒนาฐานทัพ (รองรับเรือฟก./ด.)', cost: 1000, opsCost: 40, maintCost: 10, boosts: { sustain: 15, repair: 15 } }
+            ],
+            targetScores: {
+                c2: 95, intel: 92, strike: 95, shore: 98, long: 85, defense: 95,
+                merchant: 90, intercept: 100, sustain: 85, sar: 98, medevac: 95, repair: 85
+            },
+            projects: []
+        };
+
+        // --- CALCULATION & LOGIC ---
+
+        /**
+         * One-time function to distribute the initial top-level capability scores
+         * among the baseline fleet assets based on a logical weighting system.
+         */
+        function distributeAndInitializeBaseline(force = false) {
+            if (appState.isInitialized && !force) return;
+
+            // Define strategic weight/importance for each asset type. Higher is more important.
+            const weights = {
+                'Carrier': 10, 'Frigate': 8, 'Corvette': 5, 'LPD': 7, 'LST': 4,
+                'OPV': 6, 'Patrol Boat': 2, 'MCM': 3, 'Aircraft': 5, 'Heli': 4,
+                'UAV': 3, 'Vehicle': 1, 'Artillery': 1, 'Base': 15, 'System': 20,
+                'Submarine': 9, 'C4I': 20,
+                'default': 1
+            };
+
+            // Define which capabilities each asset type contributes to.
+            const profiles = {
+                'Carrier': ['c2', 'intel', 'strike', 'long', 'sar', 'medevac', 'repair'],
+                'Frigate': ['c2', 'intel', 'strike', 'shore', 'defense', 'merchant', 'intercept', 'sar'],
+                'Corvette': ['intel', 'strike', 'defense', 'merchant', 'intercept', 'sar'],
+                'OPV': ['intel', 'merchant', 'intercept', 'sar', 'medevac', 'long'],
+                'LPD': ['c2', 'shore', 'long', 'sustain', 'medevac', 'sar'],
+                'LST': ['shore', 'sustain'],
+                'Patrol Boat': ['merchant', 'intercept', 'sar'],
+                'MCM': ['defense', 'merchant'],
+                'Aircraft': ['intel', 'strike', 'shore', 'long', 'sar'],
+                'Heli': ['intel', 'strike', 'sar', 'medevac'],
+                'UAV': ['intel', 'strike', 'shore'],
+                'Vehicle': ['shore', 'sustain'],
+                'Artillery': ['shore', 'defense'],
+                'Base': ['sustain', 'repair', 'c2', 'defense'],
+                'System': ['c2', 'intel', 'strike', 'defense'],
+                'Submarine': ['strike', 'intel', 'defense', 'long'],
+                'C4I': ['c2', 'intel', 'strike', 'defense'],
+                'default': []
+            };
+
+            // 1. Calculate total weight for each capability
+            const totalWeights = {};
+            appState.initialCapabilities.forEach(cap => {
+                totalWeights[cap.id] = 0;
+                appState.fleet.forEach(asset => {
+                    const profile = profiles[asset.type] || profiles.default;
+                    if (profile.includes(cap.id)) {
+                        const weight = weights[asset.type] || weights.default;
+                        totalWeights[cap.id] += weight * (asset.qty || 1);
+                    }
+                });
+            });
+
+            // 2. Distribute points based on weight
+            appState.initialCapabilities.forEach(cap => {
+                const totalScore = cap.score;
+                appState.fleet.forEach(asset => {
+                    const profile = profiles[asset.type] || profiles.default;
+                    if (profile.includes(cap.id) && totalWeights[cap.id] > 0) {
+                        const weight = weights[asset.type] || weights.default;
+                        const assetShare = (weight / totalWeights[cap.id]) * totalScore;
+                        asset.capabilities[cap.id] = assetShare;
+                    } else {
+                        asset.capabilities[cap.id] = 0;
+                    }
+                });
+            });
+
+            // Deep copy the initial capabilities structure for later use, only on first run
+            if (!appState.isInitialized) {
+                appState.capabilities = JSON.parse(JSON.stringify(appState.initialCapabilities));
+                appState.isInitialized = true;
+                console.log("Baseline capabilities distributed.");
+            }
+        }
+
+
+        /**
+         * Calculates the total capability scores for a given year.
+         * @param {number} year - The target year for calculation.
+         * @returns {Object} - An object with capability IDs as keys and total scores as values.
+         */
+        /** Stable key for a fleet item (Baseline or Coming) for decommission override lookup. */
+        function getFleetDecommissionKey(asset) {
+            const y = asset.year ?? asset.deliveryYear ?? 2026;
+            return `${asset.group}|${asset.name}|${y}`;
+        }
+
+        /** Effective decommission year for a fleet asset (uses override if set). Infra/System have no decommission (permanent). */
+        function getDecommissionYear(asset) {
+            if (asset.class === 'Infra' || asset.class === 'System') return Infinity; // no decommission year
+            const key = getFleetDecommissionKey(asset);
+            if (appState.decommissionYearOverrides[key] !== undefined) return appState.decommissionYearOverrides[key];
+            const serviceLife = (asset.class === 'Ship' || asset.class === 'Submarine') ? 40 : 30;
+            const baseYear = asset.deliveryYear || asset.year || 2026;
+            return baseYear + serviceLife;
+        }
+
+        function getFleetAssetByKey(key) {
+            return appState.fleet.find(a => getFleetDecommissionKey(a) === key) || null;
+        }
+
+        function adjustDecommissionYear(key, delta) {
+            const asset = getFleetAssetByKey(key);
+            if (!asset) return;
+            const current = getDecommissionYear(asset);
+            const baseYear = asset.deliveryYear || asset.year || 2026;
+            const minYear = baseYear + 1;
+            const maxYear = 2100;
+            const next = Math.max(minYear, Math.min(maxYear, current + delta));
+            appState.decommissionYearOverrides[key] = next;
+            renderStep();
+        }
+
+        function calculateCurrentCapabilities(year) {
+            const currentCaps = {};
+            appState.initialCapabilities.forEach(c => currentCaps[c.id] = 0);
+
+            // 1. Sum capabilities from baseline fleet still in service
+            appState.fleet.forEach(asset => {
+                const decommissionYear = getDecommissionYear(asset);
+
+                if (year < decommissionYear) {
+                    for (const capId in asset.capabilities) {
+                        currentCaps[capId] += asset.capabilities[capId] * (asset.qty || 1);
+                    }
+                }
+            });
+
+            // 2. Add boosts from new projects that have been delivered
+            appState.projects.forEach(p => {
+                if (year >= p.deliveryYear) {
+                    for (const capId in p.capabilities) {
+                        currentCaps[capId] += p.capabilities[capId];
+                    }
+                }
+            });
+            
+            // 3. Round and cap at 100
+            for(const capId in currentCaps) {
+                currentCaps[capId] = Math.round(Math.min(100, currentCaps[capId]));
+            }
+
+            return currentCaps;
+        }
+
+        /**
+         * Calculate O&M costs for a single asset for a given year.
+         * @param {object} asset - The asset object (from fleet or projects).
+         * @param {number} year - The target year.
+         * @returns {number} - The total O&M cost for that year.
+         */
+        function getAnnualOM(asset, year) {
+            let cost = 0;
+            const deliveryYear = asset.deliveryYear || asset.year; // Projects have deliveryYear, fleet has year
+            const decommissionYear = getDecommissionYear(asset);
+
+            if (year >= deliveryYear && year < decommissionYear) {
+                const opsRatio = (asset.status === 'Baseline') ? appState.standingForceOpsRatio : 1.0;
+                const maintRatio = (asset.status === 'Baseline') ? appState.standingForceMaintRatio : 1.0;
+                cost += asset.opsCost * (asset.qty || 1) * opsRatio;
+                // Maintenance cost starts 1 year after delivery, due to warranty
+                if (year >= deliveryYear + 1) {
+                    cost += asset.maintCost * (asset.qty || 1) * maintRatio;
+                }
+            }
+            return cost;
+        }
+
+        /**
+         * Operations cost for a single asset in a given year.
+         * Scale % applies only to standing force (Baseline); delivered projects use full cost.
+         */
+        function getAnnualOpsCost(asset, year) {
+            const deliveryYear = asset.deliveryYear || asset.year;
+            const decommissionYear = getDecommissionYear(asset);
+            if (year < deliveryYear || year >= decommissionYear) return 0;
+            let cost = (asset.opsCost || 0) * (asset.qty || 1);
+            const ratio = (asset.status === 'Baseline') ? appState.standingForceOpsRatio : 1.0;
+            return cost * ratio;
+        }
+
+        /**
+         * Maintenance cost for a single asset in a given year (starts year after delivery).
+         * Scale % applies only to standing force (Baseline); delivered projects use full cost.
+         */
+        function getAnnualMaintCost(asset, year) {
+            const deliveryYear = asset.deliveryYear || asset.year;
+            const decommissionYear = getDecommissionYear(asset);
+            if (year < deliveryYear + 1 || year >= decommissionYear) return 0;
+            let cost = (asset.maintCost || 0) * (asset.qty || 1);
+            const ratio = (asset.status === 'Baseline') ? appState.standingForceMaintRatio : 1.0;
+            return cost * ratio;
+        }
+
+        /**
+         * Calculates annual payment distribution for a project
+         */
+        function calculatePayments(totalCost, duration, startYear) {
+            const ratios = appState.paymentRatios[duration];
+            if (!ratios) return {};
+            const schedule = {};
+            ratios.forEach((pct, idx) => {
+                const year = startYear + idx;
+                schedule[year] = (totalCost * pct) / 100;
+            });
+            return schedule;
+        }
+
+
+        // --- UI Rendering ---
+
+        function setStep(step) {
+            appState.currentStep = step;
+            document.querySelectorAll('.stepper-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`step-btn-${step}`).classList.add('active');
+            renderStep();
+        }
+
+        function renderStep() {
+            const container = document.getElementById('step-container');
+            container.innerHTML = '';
+
+            // Update the global capabilities object with the latest calculation for the *current* year
+            const calculatedScores = calculateCurrentCapabilities(2026);
+            appState.capabilities.forEach(c => {
+                c.score = calculatedScores[c.id];
+            });
+
+            if (appState.currentStep === 1) {
+                renderStep1(container);
+            } else if (appState.currentStep === 2) {
+                renderStep2(container);
+            } else if (appState.currentStep === 3) {
+                renderStep3(container);
+            } else if (appState.currentStep === 4) {
+                renderStep4(container);
+            }
+
+            lucide.createIcons();
+            updateBudgetSummary();
+        }
+
+        function initCapSlider(e, id) {
+            const cap = appState.initialCapabilities.find(c => c.id === id);
+            const rect = e.currentTarget.getBoundingClientRect();
+            
+            const updateScore = (clientX) => {
+                const x = clientX - rect.left;
+                const pct = Math.max(0, Math.min(100, Math.round((x / rect.width) * 100)));
+                if (pct !== cap.score) {
+                    cap.score = pct;
+                    distributeAndInitializeBaseline(true); // Re-run distribution
+                    renderStep(); // Re-render everything
+                }
+            };
+
+            updateScore(e.clientX);
+
+            const onMove = (moveEvent) => updateScore(moveEvent.clientX);
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.body.style.cursor = 'default';
+                document.body.classList.remove('select-none');
+            };
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.body.style.cursor = 'ew-resize';
+            document.body.classList.add('select-none');
+        }
+
+        function initTargetSlider(e, id) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const updateValue = (clientX) => {
+                const x = clientX - rect.left;
+                const pct = Math.max(0, Math.min(100, Math.round((x / rect.width) * 100)));
+                if (pct !== appState.targetScores[id]) {
+                    appState.targetScores[id] = pct;
+                    renderStep(); // Re-render to update the chart
+                }
+            };
+
+            updateValue(e.clientX);
+
+            const onMove = (moveEvent) => updateValue(moveEvent.clientX);
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.body.style.cursor = 'default';
+                document.body.classList.remove('select-none');
+            };
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.body.style.cursor = 'ew-resize';
+            document.body.classList.add('select-none');
+        }
+
+        function renderStep1(container) {
+            // Group fleet by category
+            const grouped = appState.fleet.sort((a,b) => a.name.localeCompare(b.name)).reduce((acc, item) => {
+                const groupName = item.group;
+                if (!acc[groupName]) acc[groupName] = [];
+                acc[groupName].push(item);
+                return acc;
+            }, {});
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Baseline Force -->
+                    <div class="panel p-6 rounded-xl flex flex-col">
+                        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                            <i data-lucide="ship" class="text-blue-500"></i> Baseline Force (2026)
+                        </h2>
+                        <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+                            ${Object.keys(appState.groupColors).map(group => {
+                if (!grouped[group]) return '';
+                const items = grouped[group];
+                const groupColor = appState.groupColors[group] || '#334155';
+                return `
+                                <div>
+                                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <div class="w-1.5 h-3 rounded-sm" style="background-color: ${groupColor}"></div>
+                                        ${group}
+                                    </h3>
+                                    <div class="space-y-2">
+                                        ${items.map(item => {
+                    const serviceLife = (item.class === 'Ship' || item.class === 'Submarine') ? 40 : (item.class === 'Infra' || item.class === 'System') ? 100 : 30;
+                    const age = item.year ? (2026 - item.year) : null;
+                    let ageColor = 'text-slate-500';
+
+                    if (serviceLife && age !== null) {
+                        if (age >= serviceLife) ageColor = 'text-red-500 font-bold';
+                        else if (age >= serviceLife - 5) ageColor = 'text-orange-500 font-bold';
+                    }
+                    const decomYear = getDecommissionYear(item);
+                    const hasDecom = item.class !== 'Infra' && item.class !== 'System';
+                    const fleetKey = getFleetDecommissionKey(item);
+                    const keyAttr = fleetKey.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                    const ageText = item.year ? `Commissioned ${item.year} (${age} yrs)` : (item.deliveryYear ? `Delivery ${item.deliveryYear}` : '');
+                    const decomText = hasDecom ? `Decom ${decomYear}` : '—';
+
+                    return `
+                        <div class="flex items-center justify-between gap-2 p-3 bg-slate-800/40 rounded-lg border border-slate-700/50 hover:border-blue-500/50 transition">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-slate-200 text-sm">${item.name}</div>
+                                <div class="text-[10px] ${ageColor}">
+                                    ${item.type} ${item.qty ? `(${item.qty} units)` : ''}
+                                    ${ageText ? `• ${ageText}` : ''}
+                                    <span class="text-cyan-400/90 font-medium ml-1">${decomText}</span>
+                                </div>
+                                <div class="text-[9px] text-slate-500 font-mono mt-1">M: ${item.maintCost}M | O: ${item.opsCost}M</div>
+                                <div class="flex flex-wrap gap-1 mt-1">${Object.entries(item.capabilities).map(([capId, score]) => {
+                                        return score > 0 ? `<span class="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 uppercase">${capId.toUpperCase()}: ${Math.round(score)}</span>` : '';
+                                    }).join('')}
+                                </div>
+                            </div>
+                            ${hasDecom ? `<div class="flex items-center gap-0.5 shrink-0" title="Adjust decommission year">
+                                <button type="button" class="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center" data-key="${keyAttr}" data-delta="-1" onclick="adjustDecommissionYear(this.dataset.key, parseInt(this.dataset.delta, 10))">−</button>
+                                <button type="button" class="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center" data-key="${keyAttr}" data-delta="1" onclick="adjustDecommissionYear(this.dataset.key, parseInt(this.dataset.delta, 10))">+</button>
+                            </div>` : ''}
+                            <span class="px-2 py-0.5 bg-blue-900/20 text-blue-400 text-[9px] rounded uppercase font-bold tracking-wider shrink-0">
+                                ${item.status}
+                            </span>
+                        </div>
+                                            `;
+                }).join('')}
+                                    </div>
+                                </div>
+                            `;
+            }).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Capability Score Editor -->
+                    <div class="panel p-6 rounded-xl">
+                        <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i data-lucide="gauge" class="text-green-500"></i> Adjustable Capability Baseline (2026)
+                            </span>
+                        </h2>
+                        <div class="space-y-4">
+                            ${appState.initialCapabilities.map(cap => `
+                                <div class="group relative">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-slate-300 font-medium">${cap.th} <span class="text-slate-500 text-xs">/ ${cap.name}</span></span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-mono text-blue-400 font-bold">${cap.score}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-slate-800 h-3 rounded-full relative cursor-pointer group/bar" onmousedown="initCapSlider(event, '${cap.id}')">
+                                        <div class="bg-gradient-to-r from-blue-600 to-blue-400 h-full rounded-full transition-all duration-150" style="width: ${cap.score}%"></div>
+                                        <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-blue-600 shadow-lg shadow-blue-900/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style="left: calc(${cap.score}% - 8px)"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderStep2(container) {
+            const catalogGroups = Object.keys(appState.groupColors);
+            const filteredCatalog = appState.assetCatalog.filter(a => a.group === appState.selectedCatalogGroup);
+            const currentCapabilities = calculateCurrentCapabilities(2026);
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+                    <!-- Asset Catalog -->
+                    <div class="lg:col-span-1 panel p-6 rounded-xl flex flex-col">
+                        <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-200">
+                            <i data-lucide="shopping-cart" class="text-yellow-500"></i> Force Menu (Catalog)
+                        </h2>
+                        
+                        <!-- Group Selector -->
+                        <div class="flex flex-wrap gap-1 mb-4 p-1 bg-slate-800/80 rounded-lg border border-slate-700">
+                            ${catalogGroups.map(g => {
+                const isActive = appState.selectedCatalogGroup === g;
+                const gColor = appState.groupColors[g];
+                // Shorten labels to fit
+                const labels = {
+                    'เรือบรรทุกเฮลิคอปเตอร์': 'บ.ฮ.', 'เรือดำน้ำ': 'ดำน้ำ', 'เรือฟริเกต': 'ฟริเกต',
+                    'เรือคอร์เวต': 'คอร์เวต', 'เรือตรวจการณ์ระยะไกลฝั่ง': 'ตร.ไกล', 'เรือตรวจการณ์': 'ตรวจการณ์',
+                    'เรือเฉพาะกิจ': 'เฉพาะกิจ', 'เรือยกพลขึ้นบก': 'ยกพลฯ', 'เรือทุ่นระเบิด': 'ทุ่นระเบิด',
+                    'เรือสนับสนุน': 'สนับสนุน', 'เครื่องบิน': 'เครื่องบิน', 'เฮลิคอปเตอร์': 'ฮ.',
+                    'ระบบไร้คนขับ': 'DRONE', 'ระบบควบคุม': 'ควบคุม', 'หน่วยบก': 'บก', 'Infrastructure': 'Infra'
+                };
+                return `
+                    <button onclick="switchCatalogGroup('${g}')" 
+                        class="flex-1 min-w-[50px] py-1.5 px-1 rounded text-[9px] font-bold transition border ${isActive ? '' : 'border-slate-700 text-slate-500 hover:text-slate-300'}"
+                        style="${isActive ? `background-color: ${gColor}20; border-color: ${gColor}; color: ${gColor}` : ''}">
+                        ${labels[g] || g}
+                    </button>
+                                `;
+            }).join('')}
+                        </div>
+
+                        <div class="space-y-3 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                            ${filteredCatalog.map(asset => `
+                                <div class="p-4 bg-slate-800/80 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer group" onclick="showAssetDetails('${asset.id}')">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <div class="font-bold text-slate-200 text-sm">${asset.th}</div>
+                                            <div class="text-[10px] text-slate-400 uppercase tracking-wider">${asset.name}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-blue-400 font-mono text-xs font-bold">I-Cost: ${asset.cost.toLocaleString()}M</div>
+                                            <div class="text-[9px] text-slate-500 font-mono">M: ${asset.maintCost}M | O: ${asset.opsCost}M</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1 mt-2">
+                                        ${Object.keys(asset.boosts).map(b => `<span class="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 uppercase">${b} +${asset.boosts[b]}</span>`).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Gap Analysis & Targets -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <div class="panel p-6 rounded-xl">
+                            <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="bar-chart-3" class="text-purple-500"></i> Gap Analysis: Current vs 2040 Target
+                                </span>
+                            </h2>
+                            <div class="h-[400px]">
+                                <canvas id="gapChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="panel p-6 rounded-xl">
+                            <h2 class="text-xl font-bold mb-4">Set 2040 Target Scores</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
+                                ${appState.initialCapabilities.map(cap => `
+                                    <div class="group/target">
+                                        <div class="flex justify-between text-[10px] mb-1">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider">${cap.th}</span>
+                                            <span class="font-mono text-purple-400 font-bold">${appState.targetScores[cap.id]}%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2.5 rounded-full relative cursor-pointer" onmousedown="initTargetSlider(event, '${cap.id}')">
+                                            <div class="bg-gradient-to-r from-purple-600 to-purple-400 h-full rounded-full transition-all duration-150" style="width: ${appState.targetScores[cap.id]}%"></div>
+                                            <div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full border-2 border-purple-600 shadow-lg shadow-purple-900/40 opacity-0 group-hover/target:opacity-100 transition-opacity pointer-events-none" style="left: calc(${appState.targetScores[cap.id]}% - 7px)"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            initGapChart();
+        }
+
+        function switchCatalogGroup(group) {
+            appState.selectedCatalogGroup = group;
+            renderStep();
+        }
+
+        function showAssetDetails(id) {
+            const asset = appState.assetCatalog.find(a => a.id === id);
+            const boosts = Object.entries(asset.boosts).map(([k, v]) => {
+                const cap = appState.initialCapabilities.find(c => c.id === k);
+                return `• ${cap ? cap.th : k}: +${v}%`;
+            }).join('\n');
+            alert(`${asset.th}\n(${asset.name})\n\n[Financial Data]\nInvestment (I): ${asset.cost.toLocaleString()}M\nMaintenance (M/yr): ${asset.maintCost.toLocaleString()}M\nOperations (O/yr): ${asset.opsCost.toLocaleString()}M\n\n[Capability Boosts]\n${boosts}`);
+        }
+
+        let gapChart;
+        function initGapChart() {
+            const ctx = document.getElementById('gapChart');
+            if (!ctx) return;
+
+            if (gapChart) gapChart.destroy();
+            
+            const currentCapabilities = calculateCurrentCapabilities(2026);
+            const labels = appState.initialCapabilities.map(c => c.name);
+            const currentData = appState.initialCapabilities.map(c => currentCapabilities[c.id]);
+            const targetData = appState.initialCapabilities.map(c => appState.targetScores[c.id]);
+
+            gapChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Current Status (2026)',
+                            data: currentData,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgb(59, 130, 246)',
+                            pointBackgroundColor: 'rgb(59, 130, 246)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: '2040 Target',
+                            data: targetData,
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            borderColor: 'rgb(168, 85, 247)',
+                            pointBackgroundColor: 'rgb(168, 85, 247)',
+                            borderDash: [5, 5],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#334155' },
+                            grid: { color: '#334155' },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: { display: false },
+                            pointLabels: { color: '#94a3b8', font: { size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#f1f5f9', boxWidth: 12 } }
+                    }
+                }
+            });
+        }
+        
+        function renderStep3(container) {
+            // Sort projects based on current sort settings
+            const sortedProjects = [...appState.projects].sort((a, b) => {
+                let compareValue = 0;
+
+                switch (appState.ganttSortBy) {
+                    case 'startYear':
+                        compareValue = a.startYear - b.startYear;
+                        break;
+                    case 'group':
+                        compareValue = a.group.localeCompare(b.group, 'th');
+                        break;
+                    case 'cost':
+                        compareValue = a.cost - b.cost;
+                        break;
+                    case 'deliveryYear':
+                        compareValue = a.deliveryYear - b.deliveryYear;
+                        break;
+                }
+
+                return appState.ganttSortOrder === 'asc' ? compareValue : -compareValue;
+            });
+
+            container.innerHTML = `
+                <div class="space-y-6 h-full flex flex-col">
+                    <!-- Top Panel: Project Timeline & Controls -->
+                    <div class="panel p-6 rounded-xl">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                            <h2 class="text-xl font-bold flex items-center gap-2">
+                                <i data-lucide="calendar-plus" class="text-blue-500"></i> Commission New Units
+                            </h2>
+                            <div class="flex flex-wrap gap-2">
+                                <select id="catalog-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
+                                    ${appState.assetCatalog.map(a => `<option value="${a.id}">${a.th}</option>`).join('')}
+                                </select>
+                                <select id="year-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
+                                    ${Object.keys(appState.budgetFramework).slice(0, -5).map(y => `<option value="${y}">Start ${y}</option>`).join('')}
+                                </select>
+                                <select id="duration-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
+                                    <option value="1">1 Year Payment</option>
+                                    <option value="2">2 Year Payment</option>
+                                    <option value="3" selected>3 Year Payment</option>
+                                    <option value="4">4 Year Payment</option>
+                                    <option value="5">5 Year Payment</option>
+                                </select>
+                                <button onclick="addProject()" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-md text-sm font-bold transition">
+                                    Add to Plan
+                                </button>
+                                <button onclick="runMagicOptimizer()" class="bg-purple-600 hover:bg-purple-500 px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2" title="AI-Powered Acquisition Optimizer">
+                                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                    Magic
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sort Controls -->
+                        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-700/50">
+                            <span class="text-xs text-slate-400 uppercase font-bold">Sort By:</span>
+                            <div class="flex gap-2">
+                                <button onclick="setGanttSort('startYear')" class="px-3 py-1 rounded text-xs font-bold transition ${appState.ganttSortBy === 'startYear' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">
+                                    Procurement Start
+                                </button>
+                                <button onclick="setGanttSort('group')" class="px-3 py-1 rounded text-xs font-bold transition ${appState.ganttSortBy === 'group' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">
+                                    Group
+                                </button>
+                                <button onclick="setGanttSort('cost')" class="px-3 py-1 rounded text-xs font-bold transition ${appState.ganttSortBy === 'cost' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">
+                                    Investment Cost
+                                </button>
+                                <button onclick="setGanttSort('deliveryYear')" class="px-3 py-1 rounded text-xs font-bold transition ${appState.ganttSortBy === 'deliveryYear' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">
+                                    Delivery Year
+                                </button>
+                            </div>
+                            <div class="w-px h-5 bg-slate-700"></div>
+                            <button onclick="toggleGanttSortOrder()" class="px-3 py-1 rounded text-xs font-bold transition bg-slate-700 text-slate-300 hover:bg-slate-600 flex items-center gap-1" title="Toggle Sort Order">
+                                <i data-lucide="${appState.ganttSortOrder === 'asc' ? 'arrow-up' : 'arrow-down'}" class="w-3 h-3"></i>
+                                ${appState.ganttSortOrder === 'asc' ? 'ASC' : 'DESC'}
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <div class="min-w-[1000px] mb-4">
+                                <!-- Gantt Header -->
+                                <div class="grid grid-cols-[320px_1fr] border-b border-slate-700/50 pb-2 mb-1 gap-0">
+                                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-4">Project & Cost (I/M/O)</div>
+                                    <div class="relative h-4">
+                                        <div class="absolute inset-0 grid grid-cols-20 text-center text-[10px] font-mono text-slate-500">
+                                            ${Array.from({ length: 20 }, (_, i) => `<div>'${(26 + i)}</div>`).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Gantt Rows -->
+                                <div class="space-y-0.5">
+                                    ${sortedProjects.map((p, displayIdx) => {
+                const actualIdx = appState.projects.indexOf(p);
+                const startIdx = p.startYear - 2026;
+                const payStartIdx = p.paymentYears[0] - 2026;
+                const payEndIdx = p.paymentYears[p.paymentYears.length - 1] - 2026;
+                const deliveryIdx = p.deliveryYear - 2026;
+
+                return `
+                                            <div class="grid grid-cols-[320px_1fr] items-center group gap-0 border-b border-slate-800/10 py-0.5">
+                                                <!-- Project Info -->
+                                                <div class="w-[320px] flex-shrink-0 flex items-center gap-2 pl-4">
+                                                    <div class="flex flex-col gap-0.5">
+                                                        <button onclick="shiftProjectYear(${actualIdx}, -1)" class="p-0.5 hover:bg-slate-700 rounded text-slate-500 hover:text-blue-400 transition" title="Move Left">
+                                                            <i data-lucide="chevron-left" class="w-3 h-3"></i>
+                                                        </button>
+                                                        <button onclick="shiftProjectYear(${actualIdx}, 1)" class="p-0.5 hover:bg-slate-700 rounded text-slate-500 hover:text-blue-400 transition" title="Move Right">
+                                                            <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="font-bold text-slate-200 text-[10px] truncate uppercase" title="${p.assetName}">${p.assetName}</div>
+                                                        <div class="flex gap-2 items-baseline">
+                                                            <span class="text-blue-400 font-mono text-[9px] font-bold">${p.cost.toLocaleString()}M</span>
+                                                            <span class="text-[8px] text-slate-500 uppercase tracking-tighter">M:${p.maintCost} | O:${p.opsCost}</span>
+                                                        </div>
+                                                    </div>
+                                                    <button onclick="removeProject(${actualIdx})" class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-red-500 transition">
+                                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                    </button>
+                                                </div>
+
+                                                <!-- Timeline Area -->
+                                                <div class="relative h-10">
+                                                    <!-- Background Grid -->
+                                                    <div class="absolute inset-0 grid grid-cols-20 pointer-events-none">
+                                                        ${Array.from({ length: 20 }, () => `<div class="border-l border-slate-800/50 h-full"></div>`).join('')}
+                                                    </div>
+                                                    
+                                                    <!-- Year Mark (Initiation) -->
+                                                    <div class="absolute text-[8px] font-mono text-slate-400 -top-1 px-1 bg-slate-900 border border-slate-700 rounded z-10 -translate-x-1/2" style="left: ${(startIdx / 20) * 100 + 2.5}%">
+                                                        ${p.startYear}
+                                                    </div>
+
+                                                    <!-- Construction/Lead Line -->
+                                                    <div class="absolute top-1/2 -translate-y-1/2 h-[1px] bg-slate-700/50 z-0"
+                                                        style="left: ${(startIdx / 20) * 100 + 2.5}%; width: ${((payStartIdx - startIdx) / 20) * 100}%">
+                                                    </div>
+
+                                                    <!-- Payment Bar -->
+                                                    ${(() => {
+                        const gColor = appState.groupColors[p.group] || '#3b82f6';
+                        return `<div class="absolute top-1/2 -translate-y-1/2 h-5 border rounded flex items-center justify-center z-10 transition-all"`;
+                    })()}
+                                                        ${(() => {
+                        const gColor = appState.groupColors[p.group] || '#3b82f6';
+                        return `style="left: ${(payStartIdx / 20) * 100}%; width: ${(p.paymentYears.length / 20) * 100}%; background-color: ${gColor}22; border-color: ${gColor}66">`;
+                    })()}
+                                                        ${(() => {
+                        const gColor = appState.groupColors[p.group] || '#3b82f6';
+                        return `<span class="text-[8px] font-bold uppercase tracking-tighter px-1 pointer-events-none drop-shadow-md" style="color: ${gColor}">Payment</span>`;
+                    })()}
+                                                        <div class="resize-handle" onmousedown="initResize(event, ${actualIdx})"></div>
+                                                    </div>
+
+                                                    <!-- Delivery Point (Year entering service) -->
+                                                    <div class="absolute top-1/2 -translate-y-1/2 flex flex-col items-center -translate-x-1/2 z-20 pointer-events-none"
+                                                        style="left: ${((payStartIdx + p.paymentYears.length) / 20) * 100}%">
+                                                        <div class="w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900 shadow-lg shadow-green-900/60 transition-transform group-hover:scale-125"></div>
+                                                        <div class="text-[8px] font-bold text-green-400 mt-0.5 uppercase bg-slate-900/80 px-1 rounded">20${(p.paymentYears[p.paymentYears.length - 1] + 1).toString().slice(-2)}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+            }).join('')}
+                                    ${appState.projects.length === 0 ? '<div class="py-8 text-center text-slate-500 italic text-sm">No projects added to the timeline yet.</div>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Panel: Visualizations -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="panel p-6 rounded-xl flex flex-col">
+                            <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                                <i data-lucide="banknote" class="text-green-500"></i> Financial Validation (Spent vs Limit)
+                            </h2>
+                            <div class="h-[500px]">
+                                <canvas id="budgetChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="panel p-6 rounded-xl flex flex-col">
+                            <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="text-blue-500"></i> Capability Growth Curve
+                            </h2>
+                            <div class="h-[500px]">
+                                <canvas id="growthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Standing Force O&M Cost Panels (only affect baseline force, not delivered projects) -->
+                    <div class="panel p-6 rounded-xl">
+                        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                            <i data-lucide="wrench" class="text-orange-500"></i> Standing Force Cost Levels
+                        </h2>
+                        <p class="text-sm text-slate-400 mb-4">
+                            Scale O-cost and M-cost for the baseline 2026 force only. Delivered projects always use full cost.
+                            This only impacts annual spending and does not affect capability scores.
+                        </p>
+                        <div class="flex flex-col gap-4">
+                            <div class="flex flex-wrap items-center gap-4">
+                                <span class="text-sm font-medium text-slate-300">Set O-cost Level:</span>
+                                <div class="flex gap-2 p-1 bg-slate-800 border border-slate-700 rounded-lg">
+                                    <button onclick="setStandingForceOpsRatio(1.0)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceOpsRatio === 1.0 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">100%</button>
+                                    <button onclick="setStandingForceOpsRatio(0.5)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceOpsRatio === 0.5 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">50%</button>
+                                    <button onclick="setStandingForceOpsRatio(0.3)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceOpsRatio === 0.3 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">30%</button>
+                                    <button onclick="setStandingForceOpsRatio(0.1)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceOpsRatio === 0.1 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">10%</button>
+                                    <button onclick="setStandingForceOpsRatio(0.0)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceOpsRatio === 0.0 ? 'bg-red-600 text-white' : 'hover:bg-slate-700'}">0%</button>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <span class="text-sm font-medium text-slate-300">Set M-cost Level:</span>
+                                <div class="flex gap-2 p-1 bg-slate-800 border border-slate-700 rounded-lg">
+                                    <button onclick="setStandingForceMaintRatio(1.0)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceMaintRatio === 1.0 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">100%</button>
+                                    <button onclick="setStandingForceMaintRatio(0.5)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceMaintRatio === 0.5 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">50%</button>
+                                    <button onclick="setStandingForceMaintRatio(0.3)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceMaintRatio === 0.3 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">30%</button>
+                                    <button onclick="setStandingForceMaintRatio(0.1)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceMaintRatio === 0.1 ? 'bg-blue-600 text-white' : 'hover:bg-slate-700'}">10%</button>
+                                    <button onclick="setStandingForceMaintRatio(0.0)" class="px-4 py-1.5 rounded-md text-sm font-bold transition ${appState.standingForceMaintRatio === 0.0 ? 'bg-red-600 text-white' : 'hover:bg-slate-700'}">0%</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            initSimulationCharts();
+        }
+
+        function renderStep4(container) {
+            // Calculation Helpers
+            const years = Object.keys(appState.budgetFramework).map(Number);
+            const totalBudget = years.reduce((sum, y) => sum + appState.budgetFramework[y], 0);
+
+            const totalInvestment = years.reduce((sum, y) => {
+                return sum + appState.projects.reduce((pSum, p) => pSum + (p.paymentSchedule[y] || 0), 0);
+            }, 0);
+            
+            const allAssets = [...appState.fleet, ...appState.projects];
+            const totalOM = years.reduce((sum, y) => {
+                return sum + allAssets.reduce((assetSum, asset) => assetSum + getAnnualOM(asset, y), 0);
+            }, 0);
+
+            const baselineByGroup = appState.fleet
+                .filter(i => i.status === 'Baseline')
+                .reduce((acc, item) => {
+                    acc[item.group] = (acc[item.group] || 0) + (item.qty || 1);
+                    return acc;
+                }, {});
+
+            const futureByGroup = {};
+            const finalYear = 2045;
+
+            // 1. Surviving Baseline
+            appState.fleet.forEach(item => {
+                const decommissionYear = getDecommissionYear(item);
+                if (finalYear < decommissionYear) {
+                    futureByGroup[item.group] = (futureByGroup[item.group] || 0) + (item.qty || 1);
+                }
+            });
+
+            // 2. New Projects
+            appState.projects.forEach(p => {
+                if (p.deliveryYear <= finalYear) {
+                    futureByGroup[p.group] = (futureByGroup[p.group] || 0) + 1;
+                }
+            });
+
+            const futureFleetCount = Object.values(futureByGroup).reduce((a, b) => a + b, 0);
+            const baselineFleetCount = Object.values(baselineByGroup).reduce((a, b) => a + b, 0);
+
+            const groups = Object.keys(appState.groupColors);
+            const capabilities2026 = calculateCurrentCapabilities(2026);
+            const capabilities2045 = calculateCurrentCapabilities(finalYear);
+
+            container.innerHTML = `
+                <div class="space-y-10 max-w-6xl mx-auto pb-20">
+                    <!-- Report Header -->
+                    <div class="text-center space-y-2 border-b border-slate-700 pb-8">
+                        <h1 class="text-3xl font-bold text-white uppercase tracking-wider">Strategic Force Development Report</h1>
+                        <p class="text-slate-400">Force Structure & Capability Roadmap (2026 - 2045)</p>
+                    </div>
+
+                    <!-- Executive Summary KPIs -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="panel p-6 rounded-xl border border-slate-700 bg-slate-800/20">
+                            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Total Fiscal Plan (20y)</div>
+                            <div class="text-2xl font-mono text-blue-400 font-bold">${(totalBudget / 1000).toFixed(1)}B</div>
+                            <div class="text-[10px] text-slate-500">Total Allocated Budget Limit</div>
+                        </div>
+                        <div class="panel p-6 rounded-xl border border-slate-700 bg-slate-800/20">
+                            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Total Investment (I)</div>
+                            <div class="text-2xl font-mono text-blue-500 font-bold">${(totalInvestment / 1000).toFixed(1)}B</div>
+                            <div class="text-[10px] text-slate-500">${((totalInvestment / totalBudget) * 100).toFixed(1)}% of total budget</div>
+                        </div>
+                        <div class="panel p-6 rounded-xl border border-slate-700 bg-slate-800/20">
+                            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Ops & Maint (M+O)</div>
+                            <div class="text-2xl font-mono text-green-500 font-bold">${(totalOM / 1000).toFixed(1)}B</div>
+                            <div class="text-[10px] text-slate-500">Future Sustainment Overhead</div>
+                        </div>
+                        <div class="panel p-6 rounded-xl border border-slate-700 bg-slate-800/20">
+                            <div class="text-xs text-slate-500 uppercase font-bold mb-1">Force Delta</div>
+                            <div class="text-2xl font-mono text-purple-400 font-bold">${baselineFleetCount} → ${futureFleetCount}</div>
+                            <div class="text-[10px] text-slate-500">Major Hull & System Count</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <!-- Force Comparison Table -->
+                        <div class="panel p-8 rounded-xl border border-slate-700">
+                            <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                                <i data-lucide="list-checks" class="text-blue-500"></i> Force Structure Change
+                            </h2>
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-slate-500 uppercase text-[10px] border-b border-slate-700">
+                                        <th class="text-left pb-3 font-bold">Category</th>
+                                        <th class="text-center pb-3 font-bold">2026 Baseline</th>
+                                        <th class="text-center pb-3 font-bold">2045 Future</th>
+                                        <th class="text-right pb-3 font-bold">Δ Delta</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800/50">
+                                    ${groups.map(g => {
+                const b = baselineByGroup[g] || 0;
+                const f = futureByGroup[g] || 0;
+                const d = f - b;
+                return `
+                                            <tr>
+                                                <td class="py-4 text-slate-300 font-medium flex items-center gap-2">
+                                                    <div class="w-1.5 h-1.5 rounded-full" style="background-color: ${appState.groupColors[g]}"></div>
+                                                    ${g}
+                                                </td>
+                                                <td class="py-4 text-center font-mono text-slate-400">${b}</td>
+                                                <td class="py-4 text-center font-mono text-blue-400 font-bold">${f}</td>
+                                                <td class="py-4 text-right font-mono ${d >= 0 ? 'text-green-500' : 'text-red-500'} font-bold">
+                                                    ${d > 0 ? '+' : ''}${d}
+                                                </td>
+                                            </tr>
+                                        `;
+            }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Capability Impact Summary -->
+                        <div class="panel p-8 rounded-xl border border-slate-700">
+                            <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                                <i data-lucide="shield-check" class="text-purple-500"></i> Strategic Capability Delta
+                            </h2>
+                            <div class="space-y-4">
+                                ${appState.initialCapabilities.map(cap => {
+                const baseline = capabilities2026[cap.id];
+                const future = capabilities2045[cap.id];
+                const delta = future - baseline;
+                const target = appState.targetScores[cap.id];
+
+                return `
+                                        <div>
+                                            <div class="flex justify-between text-[11px] mb-1">
+                                                <span class="text-slate-400 uppercase font-bold tracking-tighter">${cap.th}</span>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-slate-500 font-mono">Target: ${target}%</span>
+                                                    <span class="font-mono text-white font-bold">${baseline}% → ${future}%</span>
+                                                </div>
+                                            </div>
+                                            <div class="relative w-full h-2 mt-2 group/bar">
+                                                <!-- Track -->
+                                                <div class="absolute inset-0 bg-slate-800 rounded-full overflow-hidden flex">
+                                                    <div class="bg-blue-600 h-full" style="width: ${baseline}%"></div>
+                                                    <div class="bg-green-500 h-full" style="width: ${delta}%"></div>
+                                                </div>
+                                                <!-- Target Marker -->
+                                                <div class="absolute top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-white shadow-[0_0_8px_rgba(255,255,255,1)] z-10 transition-transform group-hover/bar:scale-125" 
+                                                     style="left: ${target}%" title="Target: ${target}%"></div>
+                                            </div>
+                                        </div>
+                                    `;
+            }).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualization Evidence -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <div class="panel p-8 rounded-xl border border-slate-700">
+                            <h2 class="text-lg font-bold mb-4">Capability Growth Trend</h2>
+                            <div class="h-[300px]">
+                                <canvas id="reportGrowthChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="panel p-8 rounded-xl border border-slate-700">
+                            <h2 class="text-lg font-bold mb-4">Final Budget Balance</h2>
+                            <div class="h-[300px]">
+                                <canvas id="reportBudgetChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Procurement Checklist -->
+                    <div class="panel p-8 rounded-xl border border-slate-700">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <i data-lucide="clipboard-list" class="text-blue-400"></i> Detailed Procurement Schedule
+                        </h2>
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="text-slate-500 uppercase border-b border-slate-700 pb-2">
+                                    <th class="text-left py-2 font-bold">Project Name</th>
+                                    <th class="text-center py-2 font-bold">Start</th>
+                                    <th class="text-center py-2 font-bold">Payments</th>
+                                    <th class="text-center py-2 font-bold">Delivery</th>
+                                    <th class="text-right py-2 font-bold">Est. Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/50">
+                                ${appState.projects.sort((a, b) => a.startYear - b.startYear).map(p => `
+                                    <tr>
+                                        <td class="py-3 text-slate-200 font-bold uppercase">${p.assetName}</td>
+                                        <td class="py-3 text-center font-mono text-slate-400">${p.startYear}</td>
+                                        <td class="py-3 text-center font-mono text-slate-400">${p.paymentYears[0]}-${p.paymentYears[p.paymentYears.length - 1]}</td>
+                                        <td class="py-3 text-center font-mono text-green-400 font-bold">${p.deliveryYear}</td>
+                                        <td class="py-3 text-right font-mono text-blue-400 font-bold">${p.cost.toLocaleString()}M</td>
+                                    </tr>
+                                `).join('')}
+                                ${appState.projects.length === 0 ? '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No new procurements scheduled in the 20-year plan.</td></tr>' : ''}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center text-[10px] text-slate-600 uppercase tracking-[0.2em] pt-10 border-t border-slate-800/50">
+                        End of Strategic Force Planning Report &bull; RTN Strategic Force Planner v2.0
+                    </div>
+                </div>
+            `;
+
+            initReportCharts();
+        }
+
+        function initReportCharts() {
+            const years = Object.keys(appState.budgetFramework).map(Number);
+            
+            // --- Budget Chart ---
+            const ctxBudget = document.getElementById('reportBudgetChart');
+            if (ctxBudget) {
+                const limits = years.map(y => appState.budgetFramework[y]);
+                const allAssets = [...appState.fleet, ...appState.projects];
+                const actual = years.map(y => {
+                    const investment = appState.projects.reduce((sum, p) => sum + (p.paymentSchedule[y] || 0), 0);
+                    const om = allAssets.reduce((sum, p) => sum + getAnnualOM(p, y), 0);
+                    return investment + om;
+                });
+
+                new Chart(ctxBudget, {
+                    type: 'bar',
+                    data: {
+                        labels: years.map(y => y.toString().slice(-2)),
+                        datasets: [
+                            {
+                                label: 'Projected Spend',
+                                data: actual,
+                                backgroundColor: '#3b82f6',
+                                borderWidth: 0,
+                                borderRadius: 2
+                            },
+                            {
+                                label: 'Budget Limit',
+                                data: limits,
+                                type: 'line',
+                                borderColor: '#ef4444',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                fill: false,
+                                order: -1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 9 } } }
+                        },
+                        plugins: {
+                            legend: { position: 'top', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 9 } } }
+                        }
+                    }
+                });
+            }
+
+            // --- Growth Chart ---
+            const ctxGrowth = document.getElementById('reportGrowthChart');
+            if (ctxGrowth) {
+                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1', '#a855f7', '#fb7185'];
+                const datasets = appState.initialCapabilities.map((cap, idx) => {
+                    const data = years.map(y => calculateCurrentCapabilities(y)[cap.id]);
+                    return {
+                        label: cap.name,
+                        data: data,
+                        borderColor: colors[idx % colors.length],
+                        borderWidth: 1.5,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        tension: 0.3,
+                        fill: false
+                    };
+                });
+
+                new Chart(ctxGrowth, {
+                    type: 'line',
+                    data: { labels: years, datasets: datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 9 } }, min: 0, max: 100 }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        }
+        
+        function addProject() {
+            const assetId = document.getElementById('catalog-select').value;
+            const startYear = parseInt(document.getElementById('year-select').value);
+            const duration = parseInt(document.getElementById('duration-select').value);
+            const asset = appState.assetCatalog.find(a => a.id === assetId);
+
+            const paymentStart = startYear + 2;
+            const paymentYears = Array.from({ length: duration }, (_, i) => paymentStart + i);
+            const deliveryYear = paymentYears[paymentYears.length - 1] + 1;
+
+            const project = {
+                id: Date.now(),
+                assetId: asset.id,
+                name: asset.name, // Use name for consistency
+                assetName: asset.th,
+                group: asset.group,
+                cost: asset.cost,
+                opsCost: asset.opsCost,
+                maintCost: asset.maintCost,
+                capabilities: asset.boosts, // New projects just use their boosts as capabilities
+                startYear: startYear,
+                duration: duration,
+                paymentYears: paymentYears,
+                deliveryYear: deliveryYear,
+                paymentSchedule: calculatePayments(asset.cost, duration, paymentStart)
+            };
+
+            appState.projects.push(project);
+            renderStep();
+        }
+
+        function setStandingForceOpsRatio(ratio) {
+            appState.standingForceOpsRatio = parseFloat(ratio);
+            renderStep();
+        }
+        function setStandingForceMaintRatio(ratio) {
+            appState.standingForceMaintRatio = parseFloat(ratio);
+            renderStep();
+        }
+
+        function shiftProjectYear(idx, delta) {
+            const p = appState.projects[idx];
+            const newStart = p.startYear + delta;
+            if (newStart < 2024 || newStart > 2045) return;
+
+            const duration = p.paymentYears.length;
+            const paymentStart = newStart + 2;
+
+            p.startYear = newStart;
+            p.paymentYears = Array.from({ length: duration }, (_, i) => paymentStart + i);
+            p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
+            p.paymentSchedule = calculatePayments(p.cost, duration, paymentStart);
+
+            renderStep();
+        }
+
+        let resizeState = { index: -1, startX: 0, startDuration: 0 };
+
+        function initResize(e, idx) {
+            e.stopPropagation();
+            resizeState = {
+                index: idx,
+                startX: e.clientX,
+                startDuration: appState.projects[idx].paymentYears.length
+            };
+            document.addEventListener('mousemove', handleResizeMove);
+            document.addEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = 'ew-resize';
+            document.body.classList.add('select-none');
+        }
+
+        function handleResizeMove(e) {
+            if (resizeState.index === -1) return;
+            const p = appState.projects[resizeState.index];
+            const dx = e.clientX - resizeState.startX;
+
+            const grid = document.querySelector('.grid-cols-20');
+            if (!grid) return;
+            const colWidth = grid.offsetWidth / 20;
+
+            const yearDelta = Math.round(dx / colWidth);
+            let newDuration = resizeState.startDuration + yearDelta;
+            newDuration = Math.max(1, Math.min(5, newDuration));
+
+            if (newDuration !== p.paymentYears.length) {
+                const paymentStart = p.startYear + 2;
+                p.paymentYears = Array.from({ length: newDuration }, (_, i) => paymentStart + i);
+                p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
+                p.paymentSchedule = calculatePayments(p.cost, newDuration, paymentStart);
+                renderStep();
+            }
+        }
+
+        function handleResizeEnd() {
+            resizeState.index = -1;
+            document.removeEventListener('mousemove', handleResizeMove);
+            document.removeEventListener('mouseup', handleResizeEnd);
+            document.body.style.cursor = 'default';
+            document.body.classList.remove('select-none');
+        }
+
+        function removeProject(idx) {
+            appState.projects.splice(idx, 1);
+            renderStep();
+        }
+
+        function setGanttSort(sortBy) {
+            appState.ganttSortBy = sortBy;
+            renderStep();
+        }
+
+        function toggleGanttSortOrder() {
+            appState.ganttSortOrder = appState.ganttSortOrder === 'asc' ? 'desc' : 'asc';
+            renderStep();
+        }
+
+        function runMagicOptimizer() {
+            alert("Magic Optimizer is currently being recalibrated for the new dynamic capability model and is temporarily unavailable.");
+        }
+
+        let budgetChart, growthChart;
+        function initSimulationCharts() {
+            const years = Object.keys(appState.budgetFramework).map(Number);
+            const allAssets = [...appState.fleet, ...appState.projects];
+
+            // --- Budget Chart ---
+            const ctxBudget = document.getElementById('budgetChart');
+            if (ctxBudget) {
+                if (budgetChart) budgetChart.destroy();
+
+                const limits = years.map(y => appState.budgetFramework[y]);
+                const investment = years.map(y => appState.projects.reduce((sum, p) => sum + (p.paymentSchedule[y] || 0), 0));
+                const annualOpsCost = years.map(y => allAssets.reduce((sum, p) => sum + getAnnualOpsCost(p, y), 0));
+                const annualMaintCost = years.map(y => allAssets.reduce((sum, p) => sum + getAnnualMaintCost(p, y), 0));
+
+                budgetChart = new Chart(ctxBudget, {
+                    type: 'bar',
+                    data: {
+                        labels: years,
+                        datasets: [
+                            { label: 'Investment', data: investment, backgroundColor: '#3b82f6', stack: 'spent' },
+                            { label: 'Operations', data: annualOpsCost, backgroundColor: '#10b981', stack: 'spent' },
+                            { label: 'Maintenance', data: annualMaintCost, backgroundColor: '#f59e0b', stack: 'spent' },
+                            { label: 'Budget Limit', data: limits, type: 'line', borderColor: '#ef4444', borderWidth: 2, pointRadius: 0, fill: false, order: -1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' }, stacked: true },
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, stacked: true }
+                        },
+                        plugins: { legend: { position: 'top', labels: { color: '#f1f5f9', boxWidth: 10, font: { size: 10 } } } }
+                    }
+                });
+            }
+
+            // --- Growth Chart ---
+            const ctxGrowth = document.getElementById('growthChart');
+            if (ctxGrowth) {
+                if (growthChart) growthChart.destroy();
+
+                const datasets = appState.initialCapabilities.map((cap, idx) => {
+                    const data = years.map(y => calculateCurrentCapabilities(y)[cap.id]);
+                    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1', '#a855f7', '#fb7185'];
+                    return {
+                        label: cap.name,
+                        data: data,
+                        borderColor: colors[idx % colors.length],
+                        tension: 0.3, 
+                        borderWidth: 2, 
+                        pointRadius: 2,
+                        pointHoverRadius: 5
+                    };
+                });
+
+                growthChart = new Chart(ctxGrowth, {
+                    type: 'line',
+                    data: { labels: years, datasets: datasets },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                            y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' }, min: 0, max: 100 }
+                        },
+                        plugins: { legend: { position: 'bottom', labels: { color: '#f1f5f9', boxWidth: 8, font: { size: 9 } } } }
+                    }
+                });
+            }
+        }
+
+        function updateBudgetSummary() {
+            const sidebar = document.getElementById('sidebar-budget-status');
+            if (!sidebar) return;
+            sidebar.innerHTML = '';
+            
+            const allAssets = [...appState.fleet, ...appState.projects];
+            const years = Object.keys(appState.budgetFramework).sort().map(Number);
+            let overallHealth = 'GOOD';
+
+            years.forEach(year => {
+                const limit = appState.budgetFramework[year];
+                const investment = appState.projects.reduce((sum, p) => sum + (p.paymentSchedule[year] || 0), 0);
+                const ops = allAssets.reduce((sum, asset) => sum + getAnnualOpsCost(asset, year), 0);
+                const maint = allAssets.reduce((sum, asset) => sum + getAnnualMaintCost(asset, year), 0);
+                const spent = investment + ops + maint;
+
+                const pct = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+                let color = 'bg-green-500';
+                if (spent > limit) {
+                    color = 'bg-red-500';
+                    overallHealth = 'OVERBUDGET';
+                } else if (pct > 90) {
+                    color = 'bg-yellow-500';
+                    if (overallHealth === 'GOOD') overallHealth = 'TIGHT';
+                }
+
+                sidebar.innerHTML += `
+                    <div class="mb-2">
+                        <div class="flex justify-between text-[9px] text-slate-400 mb-0.5">
+                            <span class="font-bold">Year ${year}</span>
+                            <span class="${spent > limit ? 'text-red-400 font-bold' : ''}">${Math.round(spent).toLocaleString()} / ${Math.round(limit).toLocaleString()}M</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                            <div class="${color} h-full transition-all duration-500" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Update Budget Health KPI
+            const kpi = document.getElementById('budget-health-kpi');
+            if (kpi) {
+                kpi.textContent = overallHealth;
+                kpi.className = 'text-xl font-bold ';
+                if(overallHealth === 'GOOD') kpi.classList.add('text-green-400');
+                if(overallHealth === 'TIGHT') kpi.classList.add('text-yellow-400');
+                if(overallHealth === 'OVERBUDGET') kpi.classList.add('text-red-400');
+            }
+            // Update Avg. War Capability (baseline 2026)
+            const avgEl = document.getElementById('sidebar-avg-capability');
+            if (avgEl) {
+                const avg = appState.initialCapabilities.length ? Math.round(appState.initialCapabilities.reduce((a, b) => a + b.score, 0) / appState.initialCapabilities.length) : 0;
+                avgEl.textContent = avg + '%';
+            }
+            // Update Planned Assets
+            const plannedEl = document.getElementById('sidebar-planned-assets');
+            if (plannedEl) {
+                plannedEl.textContent = appState.projects.length + ' Units';
+            }
+        }
+
+        // --- Init & Persistence ---
+        
+        function migrateAppState(data) {
+            // This function is now a no-op as granular migration logic is handled directly in importData
+            return data;
+        }
+
+        window.onload = () => {
+            loadFromBrowser(); // Tries to load saved state
+            distributeAndInitializeBaseline(); // This will only run if state wasn't loaded and initialized
+            renderStep();
+            lucide.createIcons();
+        };
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", `rtn_plan_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importDataTrigger() {
+            document.getElementById('importInput').click();
+        }
+
+        // Helper function to apply imported state data
+        function applyImportedState(imported, fromStorage = false) {
+            // 1. Update general state properties
+            appState.currentStep = imported.currentStep !== undefined ? imported.currentStep : appState.currentStep;
+            if (imported.standingForceOpsRatio !== undefined) appState.standingForceOpsRatio = imported.standingForceOpsRatio;
+            if (imported.standingForceMaintRatio !== undefined) appState.standingForceMaintRatio = imported.standingForceMaintRatio;
+            if (imported.standingForceOMRatio !== undefined) { appState.standingForceOpsRatio = imported.standingForceOMRatio; appState.standingForceMaintRatio = imported.standingForceOMRatio; }
+            if (imported.decommissionYearOverrides && typeof imported.decommissionYearOverrides === 'object') {
+                appState.decommissionYearOverrides = imported.decommissionYearOverrides;
+            }
+            appState.selectedCatalogGroup = imported.selectedCatalogGroup !== undefined ? imported.selectedCatalogGroup : appState.selectedCatalogGroup;
+            appState.ganttSortBy = imported.ganttSortBy !== undefined ? imported.ganttSortBy : appState.ganttSortBy;
+            appState.ganttSortOrder = imported.ganttSortOrder !== undefined ? imported.ganttSortOrder : appState.ganttSortOrder;
+
+            // 2. Update targetScores
+            if (imported.targetScores) {
+                Object.assign(appState.targetScores, imported.targetScores);
+            }
+
+            // 3. Update scores within appState.initialCapabilities from imported data
+            if (imported.initialCapabilities && Array.isArray(imported.initialCapabilities)) {
+                appState.initialCapabilities.forEach(initialCap => {
+                    const importedInitCap = imported.initialCapabilities.find(ic => ic.id === initialCap.id);
+                    if (importedInitCap && importedInitCap.score !== undefined) {
+                        initialCap.score = importedInitCap.score;
+                    }
+                });
+            }
+
+            // 4. Update projects, ensuring deliveryYear and paymentSchedule are recalculated/consistent
+            if (imported.projects && Array.isArray(imported.projects)) {
+                appState.projects = imported.projects.map(p => {
+                    const paymentStartYear = p.startYear + 2;
+                    const paymentYears = Array.from({ length: p.duration }, (_, i) => paymentStartYear + i);
+                    return {
+                        ...p,
+                        paymentYears: paymentYears,
+                        paymentSchedule: calculatePayments(p.cost, p.duration, paymentStartYear),
+                        deliveryYear: paymentYears[paymentYears.length - 1] + 1
+                    };
+                });
+            } else {
+                appState.projects = [];
+            }
+
+            // 5. Ensure appState.fleet's capabilities are re-distributed based on the (potentially) new initialCapabilities scores.
+            distributeAndInitializeBaseline(true); // Force re-distribution. This will update appState.fleet[x].capabilities.
+
+            // appState.capabilities (the combined current capabilities) will be updated by renderStep
+            // via calculateCurrentCapabilities() after distributeAndInitializeBaseline has run.
+
+            // 6. Ensure isInitialized is set
+            appState.isInitialized = imported.isInitialized !== undefined ? imported.isInitialized : appState.isInitialized;
+
+            renderStep(); // Re-render the UI with the new state
+            showToast(fromStorage ? 'Progress loaded successfully!' : 'Data imported successfully!');
+        }
+
+        function importData(event) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    applyImportedState(imported, false); // Not from storage
+                } catch (err) {
+                    console.error(err);
+                    alert('Error importing data: ' + err.message);
+                }
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        function resetToDefault() {
+            if (!confirm('⚠️ Reset to Default?\n\nThis will clear all saved data, delete all projects, and reset capabilities. This action cannot be undone. Continue?')) {
+                return;
+            }
+            try {
+                localStorage.removeItem('rtn_planner_save');
+                location.reload();
+            } catch (err) {
+                console.error('Reset failed:', err);
+                alert('Failed to reset. Please try clearing your browser cache manually.');
+            }
+        }
+
+        function saveToBrowser() {
+            try {
+                const data = JSON.stringify(appState);
+                localStorage.setItem('rtn_planner_save', data);
+                showToast('Progress saved to browser!');
+            } catch (err) {
+                console.error('Save failed:', err);
+                alert('Failed to save to browser. Storage might be full.');
+            }
+        }
+
+        function loadFromBrowser() {
+            try {
+                const saved = localStorage.getItem('rtn_planner_save');
+                if (!saved) return;
+                
+                const data = JSON.parse(saved);
+                // migrateAppState is now a no-op, its functionality is handled by applyImportedState
+                applyImportedState(data, true); // From storage
+            } catch (err) {
+                console.error('Load failed:', err);
+                localStorage.removeItem('rtn_planner_save');
+                alert('Failed to load saved progress. Resetting to default.');
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 right-8 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-2xl z-[100] animate-bounce-short font-bold flex items-center gap-3 border border-blue-400';
+            toast.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> ${msg}`;
+            document.body.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
+</body>
+
+</html>
