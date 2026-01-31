@@ -66,6 +66,10 @@
             grid-template-columns: repeat(20, minmax(0, 1fr));
         }
 
+        .grid-cols-25 {
+            grid-template-columns: repeat(25, minmax(0, 1fr));
+        }
+
         .resize-handle {
             width: 12px;
             height: 100%;
@@ -225,7 +229,7 @@
                 2031: 8142, 2032: 8386, 2033: 8638, 2034: 8897, 2035: 9164,
                 2036: 9439, 2037: 9722, 2038: 10013, 2039: 10314, 2040: 10623,
                 2041: 10942, 2042: 11270, 2043: 11608, 2044: 11956, 2045: 12315,
-                2046: 12684, 2047: 13065
+                2046: 12684, 2047: 13065, 2048: 13457, 2049: 13861, 2050: 14277
             },
             // Payment Ratios
             paymentRatios: {
@@ -316,6 +320,8 @@
             selectedCatalogGroup: 'เรือฟริเกต',
             ganttSortBy: 'startYear',
             ganttSortOrder: 'asc',
+            reportSortBy: 'startYear',
+            reportSortOrder: 'asc',
             assetCatalog: [
                 { id: 'carrier', group: 'เรือบรรทุกเฮลิคอปเตอร์', name: 'Helicopter Carrier', th: 'เรือบรรทุกเฮลิคอปเตอร์', cost: 10000, opsCost: 105, maintCost: 35, boosts: { c2: 15, intel: 10, long: 15, medevac: 10, sar: 10 } },
                 { id: 'sub_new', group: 'เรือดำน้ำ', name: 'Submarine (New)', th: 'เรือดำน้ำ (ใหม่)', cost: 14000, opsCost: 240, maintCost: 40, boosts: { strike: 20, intel: 15, defense: 10 } },
@@ -989,7 +995,7 @@
                                     ${appState.assetCatalog.map(a => `<option value="${a.id}">${a.th}</option>`).join('')}
                                 </select>
                                 <select id="year-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
-                                    ${Object.keys(appState.budgetFramework).slice(0, -5).map(y => `<option value="${y}">Start ${y}</option>`).join('')}
+                                    ${Object.keys(appState.budgetFramework).slice(0, -7).map(y => `<option value="${y}">Start ${y}</option>`).join('')}
                                 </select>
                                 <select id="duration-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
                                     <option value="1">1 Year Payment</option>
@@ -1033,13 +1039,13 @@
                         </div>
 
                         <div class="overflow-x-auto custom-scrollbar">
-                            <div class="min-w-[1000px] mb-4">
+                            <div class="min-w-[1250px] mb-4">
                                 <!-- Gantt Header -->
                                 <div class="grid grid-cols-[320px_1fr] border-b border-slate-700/50 pb-2 mb-1 gap-0">
                                     <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-4">Project & Cost (I/M/O)</div>
                                     <div class="relative h-4">
-                                        <div class="absolute inset-0 grid grid-cols-20 text-center text-[10px] font-mono text-slate-500">
-                                            ${Array.from({ length: 20 }, (_, i) => `<div>'${(26 + i)}</div>`).join('')}
+                                        <div class="absolute inset-0 grid grid-cols-25 text-center text-[10px] font-mono text-slate-500">
+                                            ${Array.from({ length: 25 }, (_, i) => `<div>'${(26 + i)}</div>`).join('')}
                                         </div>
                                     </div>
                                 </div>
@@ -1080,18 +1086,18 @@
                                                 <!-- Timeline Area -->
                                                 <div class="relative h-10">
                                                     <!-- Background Grid -->
-                                                    <div class="absolute inset-0 grid grid-cols-20 pointer-events-none">
-                                                        ${Array.from({ length: 20 }, () => `<div class="border-l border-slate-800/50 h-full"></div>`).join('')}
+                                                    <div class="absolute inset-0 grid grid-cols-25 pointer-events-none">
+                                                        ${Array.from({ length: 25 }, () => `<div class="border-l border-slate-800/50 h-full"></div>`).join('')}
                                                     </div>
                                                     
                                                     <!-- Year Mark (Initiation) -->
-                                                    <div class="absolute text-[8px] font-mono text-slate-400 -top-1 px-1 bg-slate-900 border border-slate-700 rounded z-10 -translate-x-1/2" style="left: ${(startIdx / 20) * 100 + 2.5}%">
+                                                    <div class="absolute text-[8px] font-mono text-slate-400 -top-1 px-1 bg-slate-900 border border-slate-700 rounded z-10 -translate-x-1/2" style="left: ${(startIdx / 25) * 100 + 2.0}%">
                                                         ${p.startYear}
                                                     </div>
 
                                                     <!-- Construction/Lead Line -->
                                                     <div class="absolute top-1/2 -translate-y-1/2 h-[1px] bg-slate-700/50 z-0"
-                                                        style="left: ${(startIdx / 20) * 100 + 2.5}%; width: ${((payStartIdx - startIdx) / 20) * 100}%">
+                                                        style="left: ${(startIdx / 25) * 100 + 2.0}%; width: ${((payStartIdx - startIdx) / 25) * 100}%">
                                                     </div>
 
                                                     <!-- Payment Bar -->
@@ -1101,7 +1107,7 @@
                     })()}
                                                         ${(() => {
                         const gColor = appState.groupColors[p.group] || '#3b82f6';
-                        return `style="left: ${(payStartIdx / 20) * 100}%; width: ${(p.paymentYears.length / 20) * 100}%; background-color: ${gColor}22; border-color: ${gColor}66">`;
+                        return `style="left: ${(payStartIdx / 25) * 100}%; width: ${(p.paymentYears.length / 25) * 100}%; background-color: ${gColor}22; border-color: ${gColor}66">`;
                     })()}
                                                         ${(() => {
                         const gColor = appState.groupColors[p.group] || '#3b82f6';
@@ -1112,7 +1118,7 @@
 
                                                     <!-- Delivery Point (Year entering service) -->
                                                     <div class="absolute top-1/2 -translate-y-1/2 flex flex-col items-center -translate-x-1/2 z-20 pointer-events-none"
-                                                        style="left: ${((payStartIdx + p.paymentYears.length) / 20) * 100}%">
+                                                        style="left: ${((payStartIdx + p.paymentYears.length) / 25) * 100}%">
                                                         <div class="w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900 shadow-lg shadow-green-900/60 transition-transform group-hover:scale-125"></div>
                                                         <div class="text-[8px] font-bold text-green-400 mt-0.5 uppercase bg-slate-900/80 px-1 rounded">20${(p.paymentYears[p.paymentYears.length - 1] + 1).toString().slice(-2)}</div>
                                                     </div>
@@ -1228,6 +1234,20 @@
             const groups = Object.keys(appState.groupColors);
             const capabilities2026 = calculateCurrentCapabilities(2026);
             const capabilities2045 = calculateCurrentCapabilities(finalYear);
+
+            // Sorting logic for the procurement schedule
+            const sortedProjects = [...appState.projects].sort((a, b) => {
+                const aVal = a[appState.reportSortBy];
+                const bVal = b[appState.reportSortBy];
+                let compareValue = 0;
+                // Special handling for string comparison
+                if (appState.reportSortBy === 'assetName' || appState.reportSortBy === 'group') {
+                    compareValue = (aVal || '').localeCompare(bVal || '');
+                } else { // Handle numbers
+                    compareValue = (aVal || 0) - (bVal || 0);
+                }
+                return appState.reportSortOrder === 'asc' ? compareValue : -compareValue;
+            });
 
             container.innerHTML = `
                 <div class="space-y-10 max-w-6xl mx-auto pb-20">
@@ -1361,24 +1381,26 @@
                         <table class="w-full text-xs">
                             <thead>
                                 <tr class="text-slate-500 uppercase border-b border-slate-700 pb-2">
-                                    <th class="text-left py-2 font-bold">Project Name</th>
-                                    <th class="text-center py-2 font-bold">Start</th>
+                                    <th class="text-left py-2 font-bold"><button onclick="setReportSort('assetName')" class="flex items-center gap-1 hover:text-white transition">Project Name <i data-lucide="${appState.reportSortBy === 'assetName' ? (appState.reportSortOrder === 'asc' ? 'arrow-up' : 'arrow-down') : 'unfold-vertical'}" class="w-3 h-3"></i></button></th>
+                                    <th class="text-left py-2 font-bold"><button onclick="setReportSort('group')" class="flex items-center gap-1 hover:text-white transition">Group <i data-lucide="${appState.reportSortBy === 'group' ? (appState.reportSortOrder === 'asc' ? 'arrow-up' : 'arrow-down') : 'unfold-vertical'}" class="w-3 h-3"></i></button></th>
+                                    <th class="text-center py-2 font-bold"><button onclick="setReportSort('startYear')" class="inline-flex items-center gap-1 hover:text-white transition">Start <i data-lucide="${appState.reportSortBy === 'startYear' ? (appState.reportSortOrder === 'asc' ? 'arrow-up' : 'arrow-down') : 'unfold-vertical'}" class="w-3 h-3"></i></button></th>
                                     <th class="text-center py-2 font-bold">Payments</th>
-                                    <th class="text-center py-2 font-bold">Delivery</th>
-                                    <th class="text-right py-2 font-bold">Est. Cost</th>
+                                    <th class="text-center py-2 font-bold"><button onclick="setReportSort('deliveryYear')" class="inline-flex items-center gap-1 hover:text-white transition">Delivery <i data-lucide="${appState.reportSortBy === 'deliveryYear' ? (appState.reportSortOrder === 'asc' ? 'arrow-up' : 'arrow-down') : 'unfold-vertical'}" class="w-3 h-3"></i></button></th>
+                                    <th class="text-right py-2 font-bold"><button onclick="setReportSort('cost')" class="inline-flex items-center gap-1 hover:text-white transition">Est. Cost <i data-lucide="${appState.reportSortBy === 'cost' ? (appState.reportSortOrder === 'asc' ? 'arrow-up' : 'arrow-down') : 'unfold-vertical'}" class="w-3 h-3"></i></button></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-800/50">
-                                ${appState.projects.sort((a, b) => a.startYear - b.startYear).map(p => `
+                                ${sortedProjects.map(p => `
                                     <tr>
                                         <td class="py-3 text-slate-200 font-bold uppercase">${p.assetName}</td>
+                                        <td class="py-3 text-left font-mono text-slate-400">${p.group}</td>
                                         <td class="py-3 text-center font-mono text-slate-400">${p.startYear}</td>
                                         <td class="py-3 text-center font-mono text-slate-400">${p.paymentYears[0]}-${p.paymentYears[p.paymentYears.length - 1]}</td>
                                         <td class="py-3 text-center font-mono text-green-400 font-bold">${p.deliveryYear}</td>
                                         <td class="py-3 text-right font-mono text-blue-400 font-bold">${p.cost.toLocaleString()}M</td>
                                     </tr>
                                 `).join('')}
-                                ${appState.projects.length === 0 ? '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No new procurements scheduled in the 20-year plan.</td></tr>' : ''}
+                                ${appState.projects.length === 0 ? '<tr><td colspan="6" class="py-10 text-center text-slate-500 italic">No new procurements scheduled in the 20-year plan.</td></tr>' : ''}
                             </tbody>
                         </table>
                     </div>
@@ -1523,7 +1545,7 @@
         function shiftProjectYear(idx, delta) {
             const p = appState.projects[idx];
             const newStart = p.startYear + delta;
-            if (newStart < 2024 || newStart > 2045) return;
+            if (newStart < 2024 || newStart > 2043) return;
 
             const duration = p.paymentYears.length;
             const paymentStart = newStart + 2;
@@ -1556,18 +1578,18 @@
             const p = appState.projects[resizeState.index];
             const dx = e.clientX - resizeState.startX;
 
-            const grid = document.querySelector('.grid-cols-20');
+            const grid = document.querySelector('.grid-cols-25');
             if (!grid) return;
-            const colWidth = grid.offsetWidth / 20;
+            const colWidth = grid.offsetWidth / 25;
 
             const yearDelta = Math.round(dx / colWidth);
             let newDuration = resizeState.startDuration + yearDelta;
             newDuration = Math.max(1, Math.min(5, newDuration));
 
             if (newDuration !== p.paymentYears.length) {
-                const paymentStart = p.startYear + 2;
-                p.paymentYears = Array.from({ length: newDuration }, (_, i) => paymentStart + i);
-                p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
+                        const paymentStart = p.startYear + 2;
+                        p.duration = newDuration; // FIX: Sync duration with paymentYears length
+                        p.paymentYears = Array.from({ length: newDuration }, (_, i) => paymentStart + i);                p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
                 p.paymentSchedule = calculatePayments(p.cost, newDuration, paymentStart);
                 renderStep();
             }
@@ -1596,8 +1618,87 @@
             renderStep();
         }
 
+        function setReportSort(sortBy) {
+            if (appState.reportSortBy === sortBy) {
+                appState.reportSortOrder = appState.reportSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                appState.reportSortBy = sortBy;
+                appState.reportSortOrder = 'asc';
+            }
+            renderStep();
+        }
+
         function runMagicOptimizer() {
-            alert("Magic Optimizer is currently being recalibrated for the new dynamic capability model and is temporarily unavailable.");
+            const MAX_ITERATIONS = 1000;
+            let iterations = 0;
+            let hasChanges = false;
+
+            while (iterations < MAX_ITERATIONS) {
+                iterations++;
+
+                // 1. Calculate spending
+                const annualSpending = {};
+                const years = Object.keys(appState.budgetFramework).map(Number);
+                years.forEach(y => {
+                    const investment = appState.projects.reduce((sum, p) => sum + (p.paymentSchedule[y] || 0), 0);
+                    const om = [...appState.fleet, ...appState.projects].reduce((sum, asset) => sum + getAnnualOM(asset, y), 0);
+                    annualSpending[y] = investment + om;
+                });
+
+                // 2. Find first over-budget year
+                const firstBadYear = years.find(y => annualSpending[y] > appState.budgetFramework[y]);
+
+                // 3. If no bad year, we are done
+                if (!firstBadYear) {
+                    if (hasChanges) {
+                        showToast('✅ Plan optimized successfully!');
+                    } else {
+                        showToast('✅ Plan is already within budget.');
+                    }
+                    renderStep();
+                    return;
+                }
+
+                // 4. Identify most expensive culprit
+                const culprits = appState.projects
+                    .filter(p => p.paymentSchedule[firstBadYear] > 0)
+                    .sort((a, b) => b.cost - a.cost);
+
+                if (culprits.length === 0) {
+                     // Can't optimize if O&M alone is over budget
+                    showToast('⚠️ Cannot optimize. O&M costs may exceed budget.');
+                    renderStep();
+                    return;
+                }
+                
+                hasChanges = true;
+                const projectToMove = culprits[0];
+                const projectIndex = appState.projects.findIndex(p => p.id === projectToMove.id);
+
+                // 5. Attempt to fix
+                const maxStartYear = Math.max(...Object.keys(appState.budgetFramework).map(Number)) - (projectToMove.duration + 2);
+                if (projectToMove.startYear < maxStartYear) { // Try shifting right
+                    appState.projects[projectIndex].startYear++;
+                } else if (projectToMove.duration < 5) { // Try increasing duration
+                    appState.projects[projectIndex].duration++;
+                } else {
+                    // Can't move or change duration, give up
+                    showToast('⚠️ Could not fully optimize the plan.');
+                    renderStep();
+                    return;
+                }
+                
+                // Recalculate properties for the modified project
+                const p = appState.projects[projectIndex];
+                const paymentStart = p.startYear + 2;
+                p.paymentYears = Array.from({ length: p.duration }, (_, i) => paymentStart + i);
+                p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
+                p.paymentSchedule = calculatePayments(p.cost, p.duration, paymentStart);
+            }
+
+            // If we hit max iterations
+            showToast('⚠️ Optimization timed out. Manual adjustment may be needed.');
+            renderStep();
         }
 
         let budgetChart, growthChart;
