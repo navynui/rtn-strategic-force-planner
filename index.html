@@ -214,7 +214,7 @@
         </section>
     </main>
 
-        <script>
+    <script>
         // --- Core Logic & State ---
         const appState = {
             currentStep: 1,
@@ -223,14 +223,15 @@
             standingForceMaintRatio: 1.0,
             /** Per-fleet-item adjusted decommission year (key: group|name|yearOrDelivery, value: year). Used for Baseline and Coming (e.g. S26T) only. */
             decommissionYearOverrides: {},
-            // Budget Framework (Column J from PDF/Image)
-            budgetFramework: {
-                2026: 7023, 2027: 7234, 2028: 7451, 2029: 7674, 2030: 7905,
-                2031: 8142, 2032: 8386, 2033: 8638, 2034: 8897, 2035: 9164,
-                2036: 9439, 2037: 9722, 2038: 10013, 2039: 10314, 2040: 10623,
-                2041: 10942, 2042: 11270, 2043: 11608, 2044: 11956, 2045: 12315,
-                2046: 12684, 2047: 13065, 2048: 13457, 2049: 13861, 2050: 14277
+            selectedBudgetGroup: 8,
+            budgetGroups: {
+                1: 1.60, 2: 1.55, 3: 1.60, 4: 1.45, 5: 1.40,
+                6: 1.35, 7: 1.30, 8: 1.25, 9: 1.20, 10: 1.15
             },
+            // Budget Framework (Calculated dynamically)
+            budgetFramework: {},
+            // Baseline GDP 2026 (from Column J image)
+            baseGDP: 18580000,
             // Payment Ratios
             paymentRatios: {
                 1: [100],
@@ -395,6 +396,32 @@
         // --- CALCULATION & LOGIC ---
 
         /**
+         * Calculates the dynamic budget framework based on selected group's percentage.
+         */
+        function updateBudgetFramework() {
+            const percentMod = appState.budgetGroups[appState.selectedBudgetGroup] / 100;
+            const growthRate = 1.03;
+            const baseYear = 2026;
+
+            // Limit = GDP * %MOD (MoD) * 0.21 (Navy) * 0.15 (Investment Portfolio)
+            // For Group 8 (1.25%): 18,580,000 * 0.0125 * 0.21 * 0.15 = 7315.875 (approx 7316)
+            let currentBaseline = appState.baseGDP * percentMod * 0.21 * 0.15;
+
+            const framework = {};
+            for (let year = 2026; year <= 2050; year++) {
+                framework[year] = Math.round(currentBaseline);
+                currentBaseline *= growthRate;
+            }
+            appState.budgetFramework = framework;
+        }
+
+        function selectBudgetGroup(groupNum) {
+            appState.selectedBudgetGroup = parseInt(groupNum);
+            updateBudgetFramework();
+            renderStep();
+        }
+
+        /**
          * One-time function to distribute the initial top-level capability scores
          * among the baseline fleet assets based on a logical weighting system.
          */
@@ -529,9 +556,9 @@
                     }
                 }
             });
-            
+
             // 3. Round and cap at 100
-            for(const capId in currentCaps) {
+            for (const capId in currentCaps) {
                 currentCaps[capId] = Math.round(Math.min(100, currentCaps[capId]));
             }
 
@@ -638,7 +665,7 @@
         function initCapSlider(e, id) {
             const cap = appState.initialCapabilities.find(c => c.id === id);
             const rect = e.currentTarget.getBoundingClientRect();
-            
+
             const updateScore = (clientX) => {
                 const x = clientX - rect.left;
                 const pct = Math.max(0, Math.min(100, Math.round((x / rect.width) * 100)));
@@ -694,13 +721,13 @@
 
         function renderStep1(container) {
             // Group fleet by category
-            const grouped = appState.fleet.sort((a,b) => a.name.localeCompare(b.name)).reduce((acc, item) => {
+            const grouped = appState.fleet.sort((a, b) => a.name.localeCompare(b.name)).reduce((acc, item) => {
                 const groupName = item.group;
                 if (!acc[groupName]) acc[groupName] = [];
                 acc[groupName].push(item);
                 return acc;
             }, {});
-            
+
             container.innerHTML = `
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Baseline Force -->
@@ -708,12 +735,31 @@
                         <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
                             <i data-lucide="ship" class="text-blue-500"></i> Baseline Force (2026)
                         </h2>
+                        
+                        <!-- Strategic Group Selection -->
+                        <div class="mb-6 bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Strategic Budget Selection</h3>
+                                <span class="px-2 py-0.5 bg-blue-600/20 text-blue-400 text-[10px] rounded font-bold">Group ${appState.selectedBudgetGroup}: ${appState.budgetGroups[appState.selectedBudgetGroup]}% of GDP</span>
+                            </div>
+                            <div class="grid grid-cols-5 gap-1.5">
+                                ${Object.keys(appState.budgetGroups).map(g => `
+                                    <button onclick="selectBudgetGroup(${g})" 
+                                        class="py-1.5 text-[10px] font-bold rounded border transition-all ${appState.selectedBudgetGroup == g
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/40'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:bg-slate-700'}">
+                                        G${g}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
                         <div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar">
                             ${Object.keys(appState.groupColors).map(group => {
-                if (!grouped[group]) return '';
-                const items = grouped[group];
-                const groupColor = appState.groupColors[group] || '#334155';
-                return `
+                        if (!grouped[group]) return '';
+                        const items = grouped[group];
+                        const groupColor = appState.groupColors[group] || '#334155';
+                        return `
                                 <div>
                                     <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <div class="w-1.5 h-3 rounded-sm" style="background-color: ${groupColor}"></div>
@@ -721,22 +767,22 @@
                                     </h3>
                                     <div class="space-y-2">
                                         ${items.map(item => {
-                    const serviceLife = (item.class === 'Ship' || item.class === 'Submarine') ? 40 : (item.class === 'Infra' || item.class === 'System') ? 100 : 30;
-                    const age = item.year ? (2026 - item.year) : null;
-                    let ageColor = 'text-slate-500';
+                            const serviceLife = (item.class === 'Ship' || item.class === 'Submarine') ? 40 : (item.class === 'Infra' || item.class === 'System') ? 100 : 30;
+                            const age = item.year ? (2026 - item.year) : null;
+                            let ageColor = 'text-slate-500';
 
-                    if (serviceLife && age !== null) {
-                        if (age >= serviceLife) ageColor = 'text-red-500 font-bold';
-                        else if (age >= serviceLife - 5) ageColor = 'text-orange-500 font-bold';
-                    }
-                    const decomYear = getDecommissionYear(item);
-                    const hasDecom = item.class !== 'Infra' && item.class !== 'System';
-                    const fleetKey = getFleetDecommissionKey(item);
-                    const keyAttr = fleetKey.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-                    const ageText = item.year ? `Commissioned ${item.year} (${age} yrs)` : (item.deliveryYear ? `Delivery ${item.deliveryYear}` : '');
-                    const decomText = hasDecom ? `Decom ${decomYear}` : '—';
+                            if (serviceLife && age !== null) {
+                                if (age >= serviceLife) ageColor = 'text-red-500 font-bold';
+                                else if (age >= serviceLife - 5) ageColor = 'text-orange-500 font-bold';
+                            }
+                            const decomYear = getDecommissionYear(item);
+                            const hasDecom = item.class !== 'Infra' && item.class !== 'System';
+                            const fleetKey = getFleetDecommissionKey(item);
+                            const keyAttr = fleetKey.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                            const ageText = item.year ? `Commissioned ${item.year} (${age} yrs)` : (item.deliveryYear ? `Delivery ${item.deliveryYear}` : '');
+                            const decomText = hasDecom ? `Decom ${decomYear}` : '—';
 
-                    return `
+                            return `
                         <div class="flex items-center justify-between gap-2 p-3 bg-slate-800/40 rounded-lg border border-slate-700/50 hover:border-blue-500/50 transition">
                             <div class="min-w-0 flex-1">
                                 <div class="font-bold text-slate-200 text-sm">${item.name}</div>
@@ -747,8 +793,8 @@
                                 </div>
                                 <div class="text-[9px] text-slate-500 font-mono mt-1">M: ${item.maintCost}M | O: ${item.opsCost}M</div>
                                 <div class="flex flex-wrap gap-1 mt-1">${Object.entries(item.capabilities).map(([capId, score]) => {
-                                        return score > 0 ? `<span class="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 uppercase">${capId.toUpperCase()}: ${Math.round(score)}</span>` : '';
-                                    }).join('')}
+                                return score > 0 ? `<span class="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 uppercase">${capId.toUpperCase()}: ${Math.round(score)}</span>` : '';
+                            }).join('')}
                                 </div>
                             </div>
                             ${hasDecom ? `<div class="flex items-center gap-0.5 shrink-0" title="Adjust decommission year">
@@ -760,11 +806,11 @@
                             </span>
                         </div>
                                             `;
-                }).join('')}
+                        }).join('')}
                                     </div>
                                 </div>
                             `;
-            }).join('')}
+                    }).join('')}
                         </div>
                     </div>
 
@@ -795,7 +841,7 @@
                 </div>
             `;
         }
-        
+
         function renderStep2(container) {
             const catalogGroups = Object.keys(appState.groupColors);
             const filteredCatalog = appState.assetCatalog.filter(a => a.group === appState.selectedCatalogGroup);
@@ -909,7 +955,7 @@
             if (!ctx) return;
 
             if (gapChart) gapChart.destroy();
-            
+
             const currentCapabilities = calculateCurrentCapabilities(2026);
             const labels = appState.initialCapabilities.map(c => c.name);
             const currentData = appState.initialCapabilities.map(c => currentCapabilities[c.id]);
@@ -958,7 +1004,7 @@
                 }
             });
         }
-        
+
         function renderStep3(container) {
             // Sort projects based on current sort settings
             const sortedProjects = [...appState.projects].sort((a, b) => {
@@ -1197,7 +1243,7 @@
             const totalInvestment = years.reduce((sum, y) => {
                 return sum + appState.projects.reduce((pSum, p) => pSum + (p.paymentSchedule[y] || 0), 0);
             }, 0);
-            
+
             const allAssets = [...appState.fleet, ...appState.projects];
             const totalOM = years.reduce((sum, y) => {
                 return sum + allAssets.reduce((assetSum, asset) => assetSum + getAnnualOM(asset, y), 0);
@@ -1416,7 +1462,7 @@
 
         function initReportCharts() {
             const years = Object.keys(appState.budgetFramework).map(Number);
-            
+
             // --- Budget Chart ---
             const ctxBudget = document.getElementById('reportBudgetChart');
             if (ctxBudget) {
@@ -1501,7 +1547,7 @@
                 });
             }
         }
-        
+
         function addProject() {
             const assetId = document.getElementById('catalog-select').value;
             const startYear = parseInt(document.getElementById('year-select').value);
@@ -1587,9 +1633,9 @@
             newDuration = Math.max(1, Math.min(5, newDuration));
 
             if (newDuration !== p.paymentYears.length) {
-                        const paymentStart = p.startYear + 2;
-                        p.duration = newDuration; // FIX: Sync duration with paymentYears length
-                        p.paymentYears = Array.from({ length: newDuration }, (_, i) => paymentStart + i);                p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
+                const paymentStart = p.startYear + 2;
+                p.duration = newDuration; // FIX: Sync duration with paymentYears length
+                p.paymentYears = Array.from({ length: newDuration }, (_, i) => paymentStart + i); p.deliveryYear = p.paymentYears[p.paymentYears.length - 1] + 1;
                 p.paymentSchedule = calculatePayments(p.cost, newDuration, paymentStart);
                 renderStep();
             }
@@ -1665,12 +1711,12 @@
                     .sort((a, b) => b.cost - a.cost);
 
                 if (culprits.length === 0) {
-                     // Can't optimize if O&M alone is over budget
+                    // Can't optimize if O&M alone is over budget
                     showToast('⚠️ Cannot optimize. O&M costs may exceed budget.');
                     renderStep();
                     return;
                 }
-                
+
                 hasChanges = true;
                 const projectToMove = culprits[0];
                 const projectIndex = appState.projects.findIndex(p => p.id === projectToMove.id);
@@ -1687,7 +1733,7 @@
                     renderStep();
                     return;
                 }
-                
+
                 // Recalculate properties for the modified project
                 const p = appState.projects[projectIndex];
                 const paymentStart = p.startYear + 2;
@@ -1750,8 +1796,8 @@
                         label: cap.name,
                         data: data,
                         borderColor: colors[idx % colors.length],
-                        tension: 0.3, 
-                        borderWidth: 2, 
+                        tension: 0.3,
+                        borderWidth: 2,
                         pointRadius: 2,
                         pointHoverRadius: 5
                     };
@@ -1776,7 +1822,7 @@
             const sidebar = document.getElementById('sidebar-budget-status');
             if (!sidebar) return;
             sidebar.innerHTML = '';
-            
+
             const allAssets = [...appState.fleet, ...appState.projects];
             const years = Object.keys(appState.budgetFramework).sort().map(Number);
             let overallHealth = 'GOOD';
@@ -1816,9 +1862,9 @@
             if (kpi) {
                 kpi.textContent = overallHealth;
                 kpi.className = 'text-xl font-bold ';
-                if(overallHealth === 'GOOD') kpi.classList.add('text-green-400');
-                if(overallHealth === 'TIGHT') kpi.classList.add('text-yellow-400');
-                if(overallHealth === 'OVERBUDGET') kpi.classList.add('text-red-400');
+                if (overallHealth === 'GOOD') kpi.classList.add('text-green-400');
+                if (overallHealth === 'TIGHT') kpi.classList.add('text-yellow-400');
+                if (overallHealth === 'OVERBUDGET') kpi.classList.add('text-red-400');
             }
             // Update Avg. War Capability (baseline 2026)
             const avgEl = document.getElementById('sidebar-avg-capability');
@@ -1834,7 +1880,7 @@
         }
 
         // --- Init & Persistence ---
-        
+
         function migrateAppState(data) {
             // This function is now a no-op as granular migration logic is handled directly in importData
             return data;
@@ -1851,7 +1897,7 @@
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
             const downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `rtn_plan_${new Date().toISOString().slice(0,10)}.json`);
+            downloadAnchorNode.setAttribute("download", `rtn_plan_${new Date().toISOString().slice(0, 10)}.json`);
             document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
@@ -1874,6 +1920,10 @@
             appState.selectedCatalogGroup = imported.selectedCatalogGroup !== undefined ? imported.selectedCatalogGroup : appState.selectedCatalogGroup;
             appState.ganttSortBy = imported.ganttSortBy !== undefined ? imported.ganttSortBy : appState.ganttSortBy;
             appState.ganttSortOrder = imported.ganttSortOrder !== undefined ? imported.ganttSortOrder : appState.ganttSortOrder;
+            if (imported.selectedBudgetGroup !== undefined) {
+                appState.selectedBudgetGroup = imported.selectedBudgetGroup;
+                updateBudgetFramework();
+            }
 
             // 2. Update targetScores
             if (imported.targetScores) {
@@ -1961,7 +2011,7 @@
             try {
                 const saved = localStorage.getItem('rtn_planner_save');
                 if (!saved) return;
-                
+
                 const data = JSON.parse(saved);
                 // migrateAppState is now a no-op, its functionality is handled by applyImportedState
                 applyImportedState(data, true); // From storage
@@ -1984,10 +2034,12 @@
                 setTimeout(() => toast.remove(), 500);
             }, 3000);
         }
-    </script>
-</body>
 
-</html>
+        // Initialize
+        updateBudgetFramework();
+        distributeAndInitializeBaseline();
+        renderStep();
+    </script>
 </body>
 
 </html>
