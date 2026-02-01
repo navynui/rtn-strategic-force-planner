@@ -312,7 +312,7 @@
                 { group: 'เฮลิคอปเตอร์', name: 'เฮลิคอปเตอร์ประจำเรือ (Frigate/LPD)', type: 'Heli', qty: 11, year: 2010, class: 'Air', status: 'Baseline', opsCost: 60, maintCost: 20, capabilities: {} },
                 { group: 'ระบบไร้คนขับ', name: 'อากาศยานไร้คนขับ (UAV)', type: 'UAV', qty: 6, year: 2020, class: 'Air', status: 'Baseline', opsCost: 15, maintCost: 5, capabilities: {} },
                 { group: 'หน่วยบก', name: 'ยานพาหนะ/รถสายพาน/รถหุ้มเกราะ', type: 'Vehicle', qty: 83, year: 2005, class: 'Ground', status: 'Baseline', opsCost: 1.8, maintCost: 0.6, capabilities: {} },
-                { group: 'หน่วยบก', name: 'ปืนใหญ่/ปภ./นปอ./Guns', type: 'Artillery', qty: 248, year: 2000, class: 'Ground', status: 'Baseline', opsCost: 1.8, maintCost: 0.6, capabilities: {} },
+                { group: 'หน่วยบก', name: 'ปืนใหญ่/ปภ./นปอ./Guns', type: 'Artillery', qty: 248, year: 2000, class: 'Ground', status: 'Baseline', opsCost: 1.8, maintCost: 0.6, capabilities: {}, life: 50 },
                 { group: 'เรือดำน้ำ', name: 'S26T Submarine', type: 'Submarine', deliveryYear: 2028, class: 'Ship', status: 'Coming', capabilities: {}, opsCost: 240, maintCost: 40 },
                 { group: 'Infrastructure', name: 'ฐานทัพเรือสัตหีบ (Sattahip Naval Base)', type: 'Base', year: 1922, class: 'Infra', status: 'Baseline', opsCost: 40, maintCost: 10, capabilities: {} },
                 { group: 'Infrastructure', name: 'ฐานทัพเรือสงขลา (Songkhla Naval Base)', type: 'Base', year: 1995, class: 'Infra', status: 'Baseline', opsCost: 20, maintCost: 5, capabilities: {} },
@@ -513,7 +513,7 @@
             if (asset.class === 'Infra' || asset.class === 'System') return Infinity; // no decommission year
             const key = getFleetDecommissionKey(asset);
             if (appState.decommissionYearOverrides[key] !== undefined) return appState.decommissionYearOverrides[key];
-            const serviceLife = (asset.class === 'Ship' || asset.class === 'Submarine') ? 40 : 30;
+            const serviceLife = asset.life || ((asset.class === 'Ship' || asset.class === 'Submarine') ? 40 : 30);
             const baseYear = asset.deliveryYear || asset.year || 2026;
             return baseYear + serviceLife;
         }
@@ -768,7 +768,7 @@
                                     </h3>
                                     <div class="space-y-2">
                                         ${items.map(item => {
-                            const serviceLife = (item.class === 'Ship' || item.class === 'Submarine') ? 40 : (item.class === 'Infra' || item.class === 'System') ? 100 : 30;
+                            const serviceLife = item.life || ((item.class === 'Ship' || item.class === 'Submarine') ? 40 : (item.class === 'Infra' || item.class === 'System') ? 100 : 30);
                             const age = item.year ? (2026 - item.year) : null;
                             let ageColor = 'text-slate-500';
 
@@ -1569,6 +1569,7 @@
                 opsCost: asset.opsCost,
                 maintCost: asset.maintCost,
                 capabilities: asset.boosts, // New projects just use their boosts as capabilities
+                life: asset.life,
                 startYear: startYear,
                 duration: duration,
                 paymentYears: paymentYears,
