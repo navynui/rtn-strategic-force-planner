@@ -215,6 +215,25 @@
         </section>
     </main>
 
+    <!-- Catalog Modal -->
+    <div id="catalog-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeCatalogModal()"></div>
+        <div
+            class="absolute inset-x-4 top-10 bottom-10 md:inset-x-20 lg:inset-x-40 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                <h3 class="text-xl font-bold flex items-center gap-3">
+                    <i data-lucide="shopping-cart" class="text-yellow-500"></i> Browse Force Catalog
+                </h3>
+                <button onclick="closeCatalogModal()" class="p-2 hover:bg-slate-700 rounded-full transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="modal-catalog-container" class="flex-1 overflow-hidden p-6">
+                <!-- Content injected via renderCatalogModalContent() -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- Core Logic & State ---
         const appState = {
@@ -222,6 +241,8 @@
             isInitialized: false,
             standingForceOpsRatio: 1.0,
             standingForceMaintRatio: 1.0,
+            selectedCatalogAssetId: null, // For Step 3 selection
+            isCatalogModalOpen: false,    // For Step 3 selection
             /** Per-fleet-item adjusted decommission year (key: group|name|yearOrDelivery, value: year). Used for Baseline and Coming (e.g. S26T) only. */
             decommissionYearOverrides: {},
             selectedBudgetGroup: 8,
@@ -950,6 +971,84 @@
             alert(`${asset.th}\n(${asset.name})\n\n[Financial Data]\nInvestment (I): ${asset.cost.toLocaleString()}M\nMaintenance (M/yr): ${asset.maintCost.toLocaleString()}M\nOperations (O/yr): ${asset.opsCost.toLocaleString()}M\n\n[Capability Boosts]\n${boosts}`);
         }
 
+        // --- Catalog Modal Logic (for Step 3) ---
+
+        function openCatalogModal() {
+            appState.isCatalogModalOpen = true;
+            document.getElementById('catalog-modal').classList.remove('hidden');
+            renderCatalogModalContent();
+            lucide.createIcons();
+        }
+
+        function closeCatalogModal() {
+            appState.isCatalogModalOpen = false;
+            document.getElementById('catalog-modal').classList.add('hidden');
+        }
+
+        function switchModalCatalogGroup(group) {
+            appState.selectedCatalogGroup = group;
+            renderCatalogModalContent();
+            lucide.createIcons();
+        }
+
+        function selectAssetFromModal(id) {
+            appState.selectedCatalogAssetId = id;
+            closeCatalogModal();
+            renderStep();
+        }
+
+        function renderCatalogModalContent() {
+            const container = document.getElementById('modal-catalog-container');
+            const catalogGroups = Object.keys(appState.groupColors);
+            const filteredCatalog = appState.assetCatalog.filter(a => a.group === appState.selectedCatalogGroup);
+
+            container.innerHTML = `
+                <div class="flex flex-col h-full">
+                    <!-- Group Selector -->
+                    <div class="flex flex-wrap gap-1 mb-6 p-1 bg-slate-800/80 rounded-lg border border-slate-700">
+                        ${catalogGroups.map(g => {
+                const isActive = appState.selectedCatalogGroup === g;
+                const gColor = appState.groupColors[g];
+                const labels = {
+                    'เรือบรรทุกเฮลิคอปเตอร์': 'บ.ฮ.', 'เรือดำน้ำ': 'ดำน้ำ', 'เรือฟริเกต': 'ฟริเกต',
+                    'เรือคอร์เวต': 'คอร์เวต', 'เรือตรวจการณ์ระยะไกลฝั่ง': 'ตร.ไกล', 'เรือตรวจการณ์': 'ตรวจการณ์',
+                    'เรือเฉพาะกิจ': 'เฉพาะกิจ', 'เรือยกพลขึ้นบก': 'ยกพลฯ', 'เรือทุ่นระเบิด': 'ทุ่นระเบิด',
+                    'เรือสนับสนุน': 'สนับสนุน', 'เครื่องบิน': 'เครื่องบิน', 'เฮลิคอปเตอร์': 'ฮ.',
+                    'ระบบไร้คนขับ': 'DRONE', 'ระบบควบคุม': 'ควบคุม', 'หน่วยบก': 'บก', 'Infrastructure': 'Infra'
+                };
+                return `
+                                <button onclick="switchModalCatalogGroup('${g}')" 
+                                    class="flex-1 min-w-[60px] py-2 px-1 rounded text-[10px] font-bold transition border ${isActive ? '' : 'border-slate-700 text-slate-500 hover:text-slate-300'}"
+                                    style="${isActive ? `background-color: ${gColor}20; border-color: ${gColor}; color: ${gColor}` : ''}">
+                                    ${labels[g] || g}
+                                </button>
+                            `;
+            }).join('')}
+                    </div>
+
+                    <div class="space-y-3 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                        ${filteredCatalog.map(asset => `
+                            <div class="p-4 bg-slate-800/80 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer group" onclick="selectAssetFromModal('${asset.id}')">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <div class="font-bold text-slate-200 text-sm">${asset.th}</div>
+                                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">${asset.name}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-blue-400 font-mono text-xs font-bold">I-Cost: ${asset.cost.toLocaleString()}M</div>
+                                        <div class="text-[9px] text-slate-500 font-mono">M: ${asset.maintCost}M | O: ${asset.opsCost}M</div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    ${Object.keys(asset.boosts).map(b => `<span class="bg-slate-700 text-[9px] px-1.5 py-0.5 rounded text-slate-300 uppercase">${b} +${asset.boosts[b]}</span>`).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         let gapChart;
         function initGapChart() {
             const ctx = document.getElementById('gapChart');
@@ -1029,6 +1128,10 @@
                 return appState.ganttSortOrder === 'asc' ? compareValue : -compareValue;
             });
 
+            const selectedAsset = appState.selectedCatalogAssetId
+                ? appState.assetCatalog.find(a => a.id === appState.selectedCatalogAssetId)
+                : null;
+
             container.innerHTML = `
                 <div class="space-y-6 h-full flex flex-col">
                     <!-- Top Panel: Project Timeline & Controls -->
@@ -1037,10 +1140,22 @@
                             <h2 class="text-xl font-bold flex items-center gap-2">
                                 <i data-lucide="calendar-plus" class="text-blue-500"></i> Commission New Units
                             </h2>
-                            <div class="flex flex-wrap gap-2">
-                                <select id="catalog-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
-                                    ${appState.assetCatalog.map(a => `<option value="${a.id}">${a.th}</option>`).join('')}
-                                </select>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <!-- Catalog Selector Trigger -->
+                                <div class="flex items-center gap-2">
+                                    <button onclick="openCatalogModal()" class="flex items-center gap-2 bg-slate-800 border border-slate-700 hover:border-blue-500 px-4 py-1.5 rounded text-sm transition group">
+                                        <i data-lucide="search" class="w-4 h-4 text-slate-400 group-hover:text-blue-400"></i>
+                                        <span class="${selectedAsset ? 'text-blue-400 font-bold' : 'text-slate-400'}">
+                                            ${selectedAsset ? selectedAsset.th : 'Choose from Catalog...'}
+                                        </span>
+                                    </button>
+                                    ${selectedAsset ? `
+                                        <div class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-1 rounded border border-blue-500/20 font-mono">
+                                            ${selectedAsset.cost.toLocaleString()}M
+                                        </div>
+                                    ` : ''}
+                                </div>
+
                                 <select id="year-select" class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-sm">
                                     ${Object.keys(appState.budgetFramework).slice(0, -7).map(y => `<option value="${y}">Start ${y}</option>`).join('')}
                                 </select>
@@ -1051,7 +1166,7 @@
                                     <option value="4">4 Year Payment</option>
                                     <option value="5">5 Year Payment</option>
                                 </select>
-                                <button onclick="addProject()" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-md text-sm font-bold transition">
+                                <button onclick="addProject()" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-md text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed" ${!selectedAsset ? 'disabled' : ''}>
                                     Add to Plan
                                 </button>
                                 <button onclick="runMagicOptimizer()" class="bg-purple-600 hover:bg-purple-500 px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-2" title="AI-Powered Acquisition Optimizer">
@@ -1150,18 +1265,12 @@
                                                     <!-- Payment Bar -->
                                                     ${(() => {
                         const gColor = appState.groupColors[p.group] || '#3b82f6';
-                        return `<div class="absolute top-1/2 -translate-y-1/2 h-5 border rounded flex items-center justify-center z-10 transition-all"`;
+                        return `<div class="absolute top-1/2 -translate-y-1/2 h-5 border rounded flex items-center justify-center z-10 transition-all" 
+                                     style="left: ${(payStartIdx / 25) * 100}%; width: ${(p.paymentYears.length / 25) * 100}%; background-color: ${gColor}22; border-color: ${gColor}66">
+                                     <span class="text-[8px] font-bold uppercase tracking-tighter px-1 pointer-events-none drop-shadow-md" style="color: ${gColor}">Payment</span>
+                                     <div class="resize-handle" onmousedown="initResize(event, ${actualIdx})"></div>
+                                </div>`;
                     })()}
-                                                        ${(() => {
-                        const gColor = appState.groupColors[p.group] || '#3b82f6';
-                        return `style="left: ${(payStartIdx / 25) * 100}%; width: ${(p.paymentYears.length / 25) * 100}%; background-color: ${gColor}22; border-color: ${gColor}66">`;
-                    })()}
-                                                        ${(() => {
-                        const gColor = appState.groupColors[p.group] || '#3b82f6';
-                        return `<span class="text-[8px] font-bold uppercase tracking-tighter px-1 pointer-events-none drop-shadow-md" style="color: ${gColor}">Payment</span>`;
-                    })()}
-                                                        <div class="resize-handle" onmousedown="initResize(event, ${actualIdx})"></div>
-                                                    </div>
 
                                                     <!-- Delivery Point (Year entering service) -->
                                                     <div class="absolute top-1/2 -translate-y-1/2 flex flex-col items-center -translate-x-1/2 z-20 pointer-events-none"
@@ -1235,6 +1344,7 @@
             `;
             initSimulationCharts();
         }
+
 
         function renderStep4(container) {
             // Calculation Helpers
@@ -1550,7 +1660,9 @@
         }
 
         function addProject() {
-            const assetId = document.getElementById('catalog-select').value;
+            const assetId = appState.selectedCatalogAssetId;
+            if (!assetId) return;
+
             const startYear = parseInt(document.getElementById('year-select').value);
             const duration = parseInt(document.getElementById('duration-select').value);
             const asset = appState.assetCatalog.find(a => a.id === assetId);
@@ -1847,7 +1959,7 @@
                 }
 
                 sidebar.innerHTML += `
-                    <div class="mb-2">
+                <div class="mb-2">
                         <div class="flex justify-between text-[9px] text-slate-400 mb-0.5">
                             <span class="font-bold">Year ${year}</span>
                             <span class="${spent > limit ? 'text-red-400 font-bold' : ''}">${Math.round(spent).toLocaleString()} / ${Math.round(limit).toLocaleString()}M</span>
@@ -1856,7 +1968,7 @@
                             <div class="${color} h-full transition-all duration-500" style="width: ${pct}%"></div>
                         </div>
                     </div>
-                `;
+            `;
             });
 
             // Update Budget Health KPI
@@ -2027,7 +2139,7 @@
         function showToast(msg) {
             const toast = document.createElement('div');
             toast.className = 'fixed bottom-8 right-8 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-2xl z-[100] animate-bounce-short font-bold flex items-center gap-3 border border-blue-400';
-            toast.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> ${msg}`;
+            toast.innerHTML = `< i data - lucide="check-circle" class="w-5 h-5" ></i > ${msg}`;
             document.body.appendChild(toast);
             lucide.createIcons();
             setTimeout(() => {
