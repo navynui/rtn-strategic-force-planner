@@ -870,15 +870,50 @@
             const currentCapabilities = calculateCurrentCapabilities(2026);
 
             container.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-                    <!-- Asset Catalog -->
-                    <div class="lg:col-span-1 panel p-6 rounded-xl flex flex-col">
+                <div class="space-y-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+                        <!-- Set 2040 Target Scores (Top Left) -->
+                        <div class="lg:col-span-1 panel p-6 rounded-xl flex flex-col">
+                            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-200">
+                                <i data-lucide="target" class="text-purple-500"></i> Set 2040 Target Scores
+                            </h2>
+                            <div class="space-y-4 flex-1">
+                                ${appState.initialCapabilities.map(cap => `
+                                    <div class="group/target">
+                                        <div class="flex justify-between text-[10px] mb-1">
+                                            <span class="text-slate-400 font-bold uppercase tracking-wider">${cap.th}</span>
+                                            <span class="font-mono text-purple-400 font-bold">${appState.targetScores[cap.id]}%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2.5 rounded-full relative cursor-pointer" onmousedown="initTargetSlider(event, '${cap.id}')">
+                                            <div class="bg-gradient-to-r from-purple-600 to-purple-400 h-full rounded-full transition-all duration-150" style="width: ${appState.targetScores[cap.id]}%"></div>
+                                            <div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full border-2 border-purple-600 shadow-lg shadow-purple-900/40 opacity-0 group-hover/target:opacity-100 transition-opacity pointer-events-none" style="left: calc(${appState.targetScores[cap.id]}% - 7px)"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Gap Analysis (Top Right) -->
+                        <div class="lg:col-span-2 panel p-6 rounded-xl flex flex-col">
+                            <h2 class="text-xl font-bold mb-4 flex items-center justify-between text-slate-200">
+                                <span class="flex items-center gap-2">
+                                    <i data-lucide="bar-chart-3" class="text-purple-500"></i> Gap Analysis: Current vs 2040 Target
+                                </span>
+                            </h2>
+                            <div class="flex-1 min-h-[440px] flex items-center justify-center">
+                                <canvas id="gapChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Force Menu (Catalog) (Bottom) -->
+                    <div class="panel p-6 rounded-xl flex flex-col">
                         <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-200">
                             <i data-lucide="shopping-cart" class="text-yellow-500"></i> Force Menu (Catalog)
                         </h2>
                         
                         <!-- Group Selector -->
-                        <div class="flex flex-wrap gap-1 mb-4 p-1 bg-slate-800/80 rounded-lg border border-slate-700">
+                        <div class="flex flex-wrap gap-1 mb-6 p-1 bg-slate-800/80 rounded-lg border border-slate-700">
                             ${catalogGroups.map(g => {
                 const isActive = appState.selectedCatalogGroup === g;
                 const gColor = appState.groupColors[g];
@@ -891,16 +926,16 @@
                     'ระบบไร้คนขับ': 'DRONE', 'ระบบควบคุม': 'ควบคุม', 'หน่วยบก': 'บก', 'Infrastructure': 'Infra'
                 };
                 return `
-                    <button onclick="switchCatalogGroup('${g}')" 
-                        class="flex-1 min-w-[50px] py-1.5 px-1 rounded text-[9px] font-bold transition border ${isActive ? '' : 'border-slate-700 text-slate-500 hover:text-slate-300'}"
-                        style="${isActive ? `background-color: ${gColor}20; border-color: ${gColor}; color: ${gColor}` : ''}">
-                        ${labels[g] || g}
-                    </button>
+                                    <button onclick="switchCatalogGroup('${g}')" 
+                                        class="flex-1 min-w-[50px] py-1.5 px-1 rounded text-[9px] font-bold transition border ${isActive ? '' : 'border-slate-700 text-slate-500 hover:text-slate-300'}"
+                                        style="${isActive ? `background-color: ${gColor}20; border-color: ${gColor}; color: ${gColor}` : ''}">
+                                        ${labels[g] || g}
+                                    </button>
                                 `;
             }).join('')}
                         </div>
 
-                        <div class="space-y-3 overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             ${filteredCatalog.map(asset => `
                                 <div class="p-4 bg-slate-800/80 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer group" onclick="showAssetDetails('${asset.id}')">
                                     <div class="flex justify-between items-start mb-2">
@@ -918,38 +953,6 @@
                                     </div>
                                 </div>
                             `).join('')}
-                        </div>
-                    </div>
-
-                    <!-- Gap Analysis & Targets -->
-                    <div class="lg:col-span-2 space-y-8">
-                        <div class="panel p-6 rounded-xl">
-                            <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
-                                <span class="flex items-center gap-2">
-                                    <i data-lucide="bar-chart-3" class="text-purple-500"></i> Gap Analysis: Current vs 2040 Target
-                                </span>
-                            </h2>
-                            <div class="h-[400px]">
-                                <canvas id="gapChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="panel p-6 rounded-xl">
-                            <h2 class="text-xl font-bold mb-4">Set 2040 Target Scores</h2>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
-                                ${appState.initialCapabilities.map(cap => `
-                                    <div class="group/target">
-                                        <div class="flex justify-between text-[10px] mb-1">
-                                            <span class="text-slate-400 font-bold uppercase tracking-wider">${cap.th}</span>
-                                            <span class="font-mono text-purple-400 font-bold">${appState.targetScores[cap.id]}%</span>
-                                        </div>
-                                        <div class="w-full bg-slate-800 h-2.5 rounded-full relative cursor-pointer" onmousedown="initTargetSlider(event, '${cap.id}')">
-                                            <div class="bg-gradient-to-r from-purple-600 to-purple-400 h-full rounded-full transition-all duration-150" style="width: ${appState.targetScores[cap.id]}%"></div>
-                                            <div class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full border-2 border-purple-600 shadow-lg shadow-purple-900/40 opacity-0 group-hover/target:opacity-100 transition-opacity pointer-events-none" style="left: calc(${appState.targetScores[cap.id]}% - 7px)"></div>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
                         </div>
                     </div>
                 </div>
